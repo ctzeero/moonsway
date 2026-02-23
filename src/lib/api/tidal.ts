@@ -16,6 +16,42 @@ import type {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+const MAX_LOG_STRING_LENGTH = 400;
+
+function sanitizeLogPayload(value: unknown, seen = new WeakSet<object>()): unknown {
+  if (typeof value === "string") {
+    if (value.length <= MAX_LOG_STRING_LENGTH) return value;
+    return `${value.slice(0, MAX_LOG_STRING_LENGTH)}...[truncated ${value.length - MAX_LOG_STRING_LENGTH} chars]`;
+  }
+
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeLogPayload(item, seen));
+  }
+
+  if (value instanceof Blob) {
+    return `[Blob type=${value.type || "unknown"} size=${value.size}]`;
+  }
+
+  if (seen.has(value as object)) {
+    return "[Circular]";
+  }
+
+  seen.add(value as object);
+  const output: Record<string, unknown> = {};
+  for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+    output[key] = sanitizeLogPayload(nested, seen);
+  }
+  return output;
+}
+
+function logApiResponse(label: string, payload: unknown): void {
+  console.log(`[TIDAL] ${label}`, sanitizeLogPayload(payload));
+}
+
 function findSearchSection(
   source: any,
   key: string,
@@ -216,11 +252,14 @@ export async function searchTracks(
     { signal }
   );
   const data = await response.json();
+  logApiResponse("searchTracks raw response", data);
   const normalized = normalizeSearchResponse<Track>(data, "tracks");
-  return {
+  const result = {
     ...normalized,
     items: normalized.items.map(prepareTrack),
   };
+  logApiResponse("searchTracks normalized response", result);
+  return result;
 }
 
 export async function searchAlbums(
@@ -232,11 +271,14 @@ export async function searchAlbums(
     { signal }
   );
   const data = await response.json();
+  logApiResponse("searchAlbums raw response", data);
   const normalized = normalizeSearchResponse<Album>(data, "albums");
-  return {
+  const result = {
     ...normalized,
     items: normalized.items.map(prepareAlbum),
   };
+  logApiResponse("searchAlbums normalized response", result);
+  return result;
 }
 
 export async function searchArtists(
@@ -248,11 +290,14 @@ export async function searchArtists(
     { signal }
   );
   const data = await response.json();
+  logApiResponse("searchArtists raw response", data);
   const normalized = normalizeSearchResponse<ArtistMinified>(data, "artists");
-  return {
+  const result = {
     ...normalized,
     items: normalized.items.map(normalizeArtist),
   };
+  logApiResponse("searchArtists normalized response", result);
+  return result;
 }
 
 export async function searchPlaylists(
@@ -265,7 +310,10 @@ export async function searchPlaylists(
     { signal }
   );
   const data = await response.json();
-  return normalizeSearchResponse(data, "playlists");
+  logApiResponse("searchPlaylists raw response", data);
+  const result = normalizeSearchResponse(data, "playlists");
+  logApiResponse("searchPlaylists normalized response", result);
+  return result;
 }
 
 export async function getAlbum(
@@ -274,6 +322,7 @@ export async function getAlbum(
 ): Promise<{ album: Album; tracks: Track[] }> {
   const response = await fetchWithRetry(`/album/?id=${id}`, { signal });
   const jsonData = await response.json();
+  logApiResponse("getAlbum raw response", jsonData);
   const data = jsonData.data || jsonData;
 
   let album: Album | undefined;
@@ -305,7 +354,9 @@ export async function getAlbum(
     prepareTrack(i.item || i)
   );
 
-  return { album, tracks };
+  const result = { album, tracks };
+  logApiResponse("getAlbum normalized response", result);
+  return result;
 }
 
 export async function getArtist(
@@ -315,6 +366,7 @@ export async function getArtist(
 ): Promise<any> {
   const response = await fetchWithRetry(`/artist/?id=${artistId}`, { signal });
   const jsonData = await response.json();
+  logApiResponse("getArtist profile raw response", jsonData);
   const data = jsonData.data || jsonData;
 
   const artist = normalizeArtist(data);
@@ -325,6 +377,7 @@ export async function getArtist(
     { signal }
   );
   const contentJsonData = await contentResponse.json();
+  logApiResponse("getArtist content raw response", contentJsonData);
   const contentData = contentJsonData.data || contentJsonData;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -360,7 +413,9 @@ export async function getArtist(
   const albums = Array.from(albumMap.values());
   const tracks = Array.from(trackMap.values()).slice(0, 15);
 
-  return { ...artist, albums, tracks };
+  const result = { ...artist, albums, tracks };
+  logApiResponse("getArtist normalized response", result);
+  return result;
 }
 
 export async function getPlaylist(
@@ -370,6 +425,7 @@ export async function getPlaylist(
 ): Promise<any> {
   const response = await fetchWithRetry(`/playlist/?id=${id}`, { signal });
   const jsonData = await response.json();
+  logApiResponse("getPlaylist raw response", jsonData);
   const data = jsonData.data || jsonData;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -377,13 +433,15 @@ export async function getPlaylist(
     prepareTrack(i.item || i)
   );
 
-  return {
+  const result = {
     id: String(data.uuid || data.id || id),
     title: data.title ?? "Unknown Playlist",
     image: data.image ?? data.squareImage ?? undefined,
     numberOfTracks: data.numberOfTracks ?? tracks.length,
     tracks,
   };
+  logApiResponse("getPlaylist normalized response", result);
+  return result;
 }
 
 export async function getTrackMetadata(
@@ -395,6 +453,7 @@ export async function getTrackMetadata(
     signal,
   });
   const json = await response.json();
+  logApiResponse("getTrackMetadata raw response", json);
   const data = json.data || json;
 
   const items = Array.isArray(data) ? data : [data];
@@ -404,7 +463,9 @@ export async function getTrackMetadata(
   );
 
   if (found) {
-    return prepareTrack(found.item || found);
+    const result = prepareTrack(found.item || found);
+    logApiResponse("getTrackMetadata normalized response", result);
+    return result;
   }
 
   throw new Error("Track metadata not found");
@@ -420,7 +481,9 @@ export async function getStreamUrl(
     { type: "streaming", signal }
   );
   const jsonResponse = await response.json();
+  logApiResponse("getStreamUrl raw response", jsonResponse);
   const normalized = normalizeTrackResponse(jsonResponse);
+  logApiResponse("getStreamUrl normalized track response", normalized);
   const lookup = parseTrackLookup(normalized);
 
   if (lookup.originalTrackUrl) {

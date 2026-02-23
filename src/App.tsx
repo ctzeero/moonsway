@@ -1,13 +1,15 @@
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from "react-router";
-import { Home, Search, Library } from "lucide-react";
+import { Home, Search, Library, Music2 } from "lucide-react";
 import { PlayerBar } from "@/components/player-bar";
 import { SearchBar } from "@/components/search-bar";
+import { UserButton } from "@/components/user-button";
 import { HomePage } from "@/pages/home";
 import { SearchPage } from "@/pages/search";
 import { AlbumPage } from "@/pages/album";
 import { ArtistPage } from "@/pages/artist";
 import { PlaylistPage } from "@/pages/playlist";
 import { LibraryPage } from "@/pages/library";
+import { SpotifyPage } from "@/pages/spotify";
 import logoSrc from "@/assets/icons/moonsway.png";
 import { cn } from "@/lib/utils";
 
@@ -52,7 +54,11 @@ function AppLayout() {
             <NavItem to="/" icon={Home} label="Home" />
             <NavItem to="/search" icon={Search} label="Search" />
             <NavItem to="/library" icon={Library} label="Library" />
+            <NavItem to="/spotify" icon={Music2} label="Spotify Import" />
           </nav>
+          <div className="mt-auto">
+            <UserButton />
+          </div>
         </aside>
 
         {/* Main content area with header */}
@@ -72,6 +78,7 @@ function AppLayout() {
               <Route path="/artist/:id" element={<ArtistPage />} />
               <Route path="/playlist/:id" element={<PlaylistPage />} />
               <Route path="/library" element={<LibraryPage />} />
+              <Route path="/spotify" element={<SpotifyPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>

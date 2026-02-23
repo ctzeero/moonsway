@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
-const host = process.env.TAURI_DEV_HOST;
+const host = process.env.TAURI_DEV_HOST || "127.0.0.1";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -14,9 +14,10 @@ export default defineConfig({
   },
   clearScreen: false,
   server: {
-    port: 1420,
+    port: 1420, 
     strictPort: true,
-    host: host || false,
+    host,
+    allowedHosts: [".ngrok-free.app", host],
     hmr: host
       ? {
           protocol: "ws",
