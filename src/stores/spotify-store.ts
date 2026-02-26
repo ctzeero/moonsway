@@ -67,6 +67,7 @@ interface SpotifyState {
   selectAll: () => void;
   deselectAll: () => void;
   startImport: () => Promise<void>;
+  cancelImport: () => void;
   reset: () => void;
   clearError: () => void;
 }
@@ -81,6 +82,9 @@ const INITIAL_STATE = {
   results: [],
   error: null,
 };
+
+// Held outside Zustand state so it doesn't trigger re-renders
+let importController: AbortController | null = null;
 
 export const useSpotifyStore = create<SpotifyState>((set, get) => ({
   ...INITIAL_STATE,
@@ -125,12 +129,21 @@ export const useSpotifyStore = create<SpotifyState>((set, get) => ({
 
   deselectAll: () => set({ selectedIds: new Set() }),
 
+  cancelImport: () => {
+    importController?.abort();
+    importController = null;
+    set({ step: "picking", progress: null, error: null });
+  },
+
   startImport: async () => {
     const { token, playlists, selectedIds } = get();
     if (!token) return;
 
     const selected = playlists.filter((p) => selectedIds.has(p.id));
     if (selected.length === 0) return;
+
+    importController = new AbortController();
+    const { signal } = importController;
 
     set({ step: "importing", results: [], error: null });
 
@@ -149,8 +162,12 @@ export const useSpotifyStore = create<SpotifyState>((set, get) => ({
         },
       });
 
+      if (signal.aborted) break;
+
       try {
         const rawTracks = await fetchPlaylistTracks(playlist.id, token);
+
+        console.log(`[spotify] Fetching playlist tracks for ${playlist.name} (${playlist.id})`);
         // js-combine-iterations: single pass instead of .map().filter()
         // Use `item` (current) with `track` as deprecated fallback
         const tracks: SpotifyTrack[] = [];
@@ -180,34 +197,40 @@ export const useSpotifyStore = create<SpotifyState>((set, get) => ({
             }));
           }
 
+          // Stop immediately if the user cancelled
+          if (signal.aborted) break;
+
           const isrc = track.external_ids?.isrc;
           let tidalTrack: Track | null = null;
 
           if (isrc) {
             try {
               // Search TIDAL by ISRC — most reliable cross-service identifier
-              const result = await searchTracks(`isrc:${isrc}`);
+              const result = await searchTracks(`isrc:${isrc}`, { signal });
               tidalTrack = result.items[0] ?? null;
 
               // Fallback: search by title + artist if ISRC gives no result
               if (!tidalTrack) {
                 const fallback = await searchTracks(
-                  `${track.name} ${track.artists[0]?.name ?? ""}`
+                  `${track.name} ${track.artists[0]?.name ?? ""}`,
+                  { signal }
                 );
                 tidalTrack = fallback.items[0] ?? null;
               }
-            } catch {
-              // TIDAL lookup failed — treat as unmatched
+            } catch (e) {
+              if ((e as Error).name === "AbortError") break;
+              // Other TIDAL lookup failure — treat as unmatched
             }
           } else {
             // No ISRC — search by title + artist
             try {
               const fallback = await searchTracks(
-                `${track.name} ${track.artists[0]?.name ?? ""}`
+                `${track.name} ${track.artists[0]?.name ?? ""}`,
+                { signal }
               );
               tidalTrack = fallback.items[0] ?? null;
-            } catch {
-              // ignore
+            } catch (e) {
+              if ((e as Error).name === "AbortError") break;
             }
           }
 
@@ -249,6 +272,7 @@ export const useSpotifyStore = create<SpotifyState>((set, get) => ({
       }
     }
 
+    importController = null;
     set({ step: "done", results, progress: null });
   },
 

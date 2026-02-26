@@ -20,6 +20,10 @@ export interface FetchOptions {
   signal?: AbortSignal;
 }
 
+// Timeout per individual instance attempt. If an instance hangs (e.g. CORS
+// pre-flight stall or dead server), we give up on it quickly and try the next.
+const INSTANCE_TIMEOUT_MS = 5000;
+
 export async function fetchWithRetry(
   relativePath: string,
   options: FetchOptions = {}
@@ -36,13 +40,27 @@ export async function fetchWithRetry(
   let instanceIndex = randomInstanceIndex(instances);
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    // Bail immediately if the caller cancelled
+    if (options.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
     const baseUrl = instances[instanceIndex % instances.length];
     const url = baseUrl.endsWith("/")
       ? `${baseUrl}${relativePath.substring(1)}`
       : `${baseUrl}${relativePath}`;
 
+    // Combine caller's signal with a per-instance timeout signal
+    const timeoutController = new AbortController();
+    const timeoutId = setTimeout(
+      () => timeoutController.abort(),
+      INSTANCE_TIMEOUT_MS
+    );
+    const signal = options.signal
+      ? anySignal([options.signal, timeoutController.signal])
+      : timeoutController.signal;
+
     try {
-      const response = await fetch(url, { signal: options.signal });
+      const response = await fetch(url, { signal });
+      clearTimeout(timeoutId);
 
       if (response.status === 429) {
         console.warn(`[API] Rate limit on ${baseUrl}, trying next...`);
@@ -79,10 +97,19 @@ export async function fetchWithRetry(
       lastError = new Error(`Request failed with status ${response.status}`);
       instanceIndex++;
     } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") throw error;
+      clearTimeout(timeoutId);
+      // Re-throw only if the caller's own signal was aborted (user cancel)
+      if (
+        error instanceof Error &&
+        error.name === "AbortError" &&
+        options.signal?.aborted
+      ) {
+        throw error;
+      }
+      // Otherwise it was our timeout — log and move on to the next instance
       lastError = error instanceof Error ? error : new Error(String(error));
       console.warn(
-        `[API] Network error on ${baseUrl}: ${lastError.message}, trying next...`
+        `[API] ${timeoutController.signal.aborted ? "Timeout" : "Network error"} on ${baseUrl}: ${lastError.message}, trying next...`
       );
       instanceIndex++;
       await delay(200);
@@ -90,4 +117,17 @@ export async function fetchWithRetry(
   }
 
   throw lastError ?? new Error(`All instances failed for: ${relativePath}`);
+}
+
+// Aborts as soon as any of the provided signals fires.
+function anySignal(signals: AbortSignal[]): AbortSignal {
+  const controller = new AbortController();
+  for (const signal of signals) {
+    if (signal.aborted) {
+      controller.abort();
+      break;
+    }
+    signal.addEventListener("abort", () => controller.abort(), { once: true });
+  }
+  return controller.signal;
 }

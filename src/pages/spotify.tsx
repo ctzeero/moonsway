@@ -231,7 +231,7 @@ function PickStep() {
 // -- Import progress step --
 
 function ImportStep() {
-  const progress = useSpotifyStore((s) => s.progress);
+  const { progress, cancelImport } = useSpotifyStore();
 
   if (!progress) return null;
 
@@ -279,6 +279,11 @@ function ImportStep() {
           </div>
         </div>
       </div>
+
+      <Button variant="outline" size="sm" onClick={() => cancelImport()}>
+        <X className="size-4" />
+        Cancel
+      </Button>
     </div>
   );
 }

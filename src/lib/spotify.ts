@@ -8,7 +8,7 @@
  * 4. Token saved to localStorage, used for all API calls
  */
 
-const SPOTIFY_CLIENT_ID = "002aca4ba54644358e3ea3949261d770"; // <-- paste your Spotify app Client ID here
+const SPOTIFY_CLIENT_ID = "86de92834443444d8a2eabc3ff174b83";
 const SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize";
 const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
 const SPOTIFY_SCOPES =
@@ -127,6 +127,10 @@ async function spotifyFetch(
     throw new Error("spotify/unauthorized");
   }
 
+  if (res.status === 403) {
+    throw new Error("spotify/forbidden");
+  }
+
   if (!res.ok) {
     throw new Error(`Spotify API error ${res.status}: ${url}`);
   }
@@ -214,7 +218,7 @@ export async function fetchPlaylistTracks(
   const url =
     playlistId === "liked"
       ? "https://api.spotify.com/v1/me/tracks?limit=50"
-      : `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50`;
+      : `https://api.spotify.com/v1/playlists/${playlistId}/items?limit=50`;
 
   return fetchAllPages<SpotifyPlaylistTrack>(url, token, onProgress);
 }

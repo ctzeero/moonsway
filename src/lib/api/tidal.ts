@@ -48,7 +48,10 @@ function sanitizeLogPayload(value: unknown, seen = new WeakSet<object>()): unkno
   return output;
 }
 
+const DEBUG = import.meta.env.VITE_DEBUG_TIDAL === 'true';
+
 function logApiResponse(label: string, payload: unknown): void {
+  if (!DEBUG) return;
   console.log(`[TIDAL] ${label}`, sanitizeLogPayload(payload));
 }
 
@@ -245,11 +248,11 @@ function normalizeTrackResponse(apiResponse: any): any {
 
 export async function searchTracks(
   query: string,
-  signal?: AbortSignal
+  options?: { signal?: AbortSignal }
 ): Promise<SearchResult<Track>> {
   const response = await fetchWithRetry(
     `/search/?s=${encodeURIComponent(query)}`,
-    { signal }
+    { signal: options?.signal }
   );
   const data = await response.json();
   logApiResponse("searchTracks raw response", data);
