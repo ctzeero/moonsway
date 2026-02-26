@@ -561,7 +561,7 @@ export function SpotifyPage() {
         <div>
           <h1 className="text-2xl font-bold">Spotify Import</h1>
           <p className="text-sm text-muted-foreground">
-            Transfer your playlists to TIDAL
+            Transfer your playlists to Moonsway
           </p>
         </div>
       </div>
