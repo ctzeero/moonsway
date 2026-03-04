@@ -36,7 +36,7 @@ export async function searchTracks(
   const cached = await cache.get<SearchResult<Track>>("search_tracks", query);
   if (cached) return cached;
 
-  const result = await tidal.searchTracks(query, signal);
+  const result = await tidal.searchTracks(query, { signal });
   await cache.set("search_tracks", query, result);
   return result;
 }
