@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import {
+  browserLocalPersistence,
+  setPersistence,
   signInWithPopup,
   signInWithRedirect,
   signOut as fbSignOut,
@@ -18,6 +20,16 @@ interface AuthState {
   clearError: () => void;
 }
 
+function shouldAvoidRedirectFallback(): boolean {
+  if (typeof navigator === "undefined") return false;
+
+  const ua = navigator.userAgent;
+  return (
+    /Android|iPhone|iPad|iPod|Mobile/i.test(ua) ||
+    /(FBAN|FBAV|Instagram|Line|MicroMessenger|wv)/i.test(ua)
+  );
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   loading: isFirebaseEnabled,
@@ -31,6 +43,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
     set({ error: null });
     try {
+      await setPersistence(auth, browserLocalPersistence);
       await signInWithPopup(auth, googleProvider);
     } catch (err: unknown) {
       const code = (err as { code?: string }).code;
@@ -38,6 +51,14 @@ export const useAuthStore = create<AuthState>((set) => ({
         code === "auth/popup-blocked" ||
         code === "auth/cancelled-popup-request"
       ) {
+        if (shouldAvoidRedirectFallback()) {
+          set({
+            error:
+              "Google sign-in popup was blocked. Allow popups for this browser or open Moonsway in Safari or Chrome and try again.",
+          });
+          return;
+        }
+
         try {
           await signInWithRedirect(auth, googleProvider);
         } catch (redirectErr: unknown) {

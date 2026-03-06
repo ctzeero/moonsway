@@ -67,8 +67,8 @@ export function TrackList({ tracks, onPlay }: TrackListProps) {
           <div
             key={`${track.id}-${index}`}
             className={cn(
-              "group grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 rounded-2xl border border-border/60 bg-card/60 px-3 py-3 transition-colors hover:bg-accent/40 md:grid-cols-[1fr_1fr_2rem_4rem] md:items-center md:gap-3 md:rounded-md md:border-0 md:bg-transparent md:px-4 md:py-2 md:hover:bg-accent/50",
-              isCurrent && "bg-accent/30"
+              "group grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 px-1 py-3 transition-colors hover:bg-accent/22 md:grid-cols-[1fr_1fr_2rem_4rem] md:items-center md:gap-3 md:px-3 md:hover:bg-accent/28",
+              isCurrent && "bg-accent/18"
             )}
           >
             {/* Title + artist */}
@@ -127,7 +127,7 @@ export function TrackList({ tracks, onPlay }: TrackListProps) {
                 toggleFavoriteTrack(track);
               }}
               className={cn(
-                "col-start-3 row-start-1 flex items-center justify-center self-start transition-opacity md:col-start-auto md:row-start-auto md:self-auto md:opacity-0 md:group-hover:opacity-100",
+                "col-start-2 row-start-1 flex items-center justify-center self-start transition-opacity md:col-start-auto md:row-start-auto md:self-auto md:opacity-0 md:group-hover:opacity-100",
                 isFav && "opacity-100"
               )}
             >
@@ -142,7 +142,7 @@ export function TrackList({ tracks, onPlay }: TrackListProps) {
             </button>
 
             {/* Duration */}
-            <span className="col-start-3 row-start-2 text-right text-xs tabular-nums text-muted-foreground md:col-start-auto md:row-start-auto md:text-sm">
+            <span className="col-start-2 row-start-2 text-right text-xs tabular-nums text-muted-foreground md:col-start-auto md:row-start-auto md:text-sm">
               {formatTime(track.duration)}
             </span>
           </div>
