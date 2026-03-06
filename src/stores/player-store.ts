@@ -39,6 +39,7 @@ interface PlayerState {
   // Current track
   currentTrack: Track | null;
   streamUrl: string | null;
+  streamQuality: StreamQuality | null;
 
   // Playback
   isPlaying: boolean;
@@ -240,6 +241,7 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
         isPlaying: false,
         currentTrack: track,
         streamUrl: null,
+        streamQuality: get().quality,
         duration: 0,
         currentTime: Math.max(0, startAt),
       });
@@ -271,7 +273,7 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
 
         audio.src = url;
         audio.load();
-        set({ streamUrl: url });
+        set({ streamUrl: url, streamQuality: get().quality });
 
         await new Promise<void>((resolve, reject) => {
           const onCanPlay = () => {
@@ -332,7 +334,7 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
 
             audio.src = url;
             audio.load();
-            set({ streamUrl: url });
+            set({ streamUrl: url, streamQuality: "LOSSLESS" });
             if (startAt > 0) {
               audio.currentTime = Math.max(0, startAt);
               set({ currentTime: Math.max(0, startAt) });
@@ -413,6 +415,7 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
 
       currentTrack: null,
       streamUrl: null,
+      streamQuality: null,
 
       isPlaying: false,
       isLoading: false,
@@ -603,6 +606,7 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
           currentIndex: -1,
           currentTrack: null,
           streamUrl: null,
+          streamQuality: null,
           isPlaying: false,
           currentTime: 0,
           duration: 0,

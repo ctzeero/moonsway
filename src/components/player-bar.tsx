@@ -7,6 +7,7 @@ import {
   Shuffle,
   Repeat,
   Repeat1,
+  Heart,
   Volume2,
   Volume1,
   VolumeX,
@@ -16,9 +17,18 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { usePlayerStore } from "@/stores/player-store";
+import { useLibraryStore } from "@/stores/library-store";
 import { getCoverUrl } from "@/lib/api/music-api";
 import { formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import type { StreamQuality } from "@/types/music";
+
+const QUALITY_LABELS: Record<StreamQuality, string> = {
+  HI_RES_LOSSLESS: "Hi-Res Lossless",
+  LOSSLESS: "Lossless",
+  HIGH: "High",
+  LOW: "Low",
+};
 
 export function PlayerBar() {
   const currentTrack = usePlayerStore((s) => s.currentTrack);
@@ -28,6 +38,7 @@ export function PlayerBar() {
   const currentTime = usePlayerStore((s) => s.currentTime);
   const volume = usePlayerStore((s) => s.volume);
   const isMuted = usePlayerStore((s) => s.isMuted);
+  const streamQuality = usePlayerStore((s) => s.streamQuality);
   const shuffleActive = usePlayerStore((s) => s.shuffleActive);
   const repeatMode = usePlayerStore((s) => s.repeatMode);
 
@@ -39,6 +50,8 @@ export function PlayerBar() {
   const toggleMute = usePlayerStore((s) => s.toggleMute);
   const toggleShuffle = usePlayerStore((s) => s.toggleShuffle);
   const cycleRepeat = usePlayerStore((s) => s.cycleRepeat);
+  const favoriteTracks = useLibraryStore((s) => s.favoriteTracks);
+  const toggleFavoriteTrack = useLibraryStore((s) => s.toggleFavoriteTrack);
 
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [scrubTime, setScrubTime] = useState(0);
@@ -60,6 +73,11 @@ export function PlayerBar() {
   const RepeatIcon = repeatMode === "one" ? Repeat1 : Repeat;
   const progressValue = isScrubbing ? scrubTime : currentTime;
   const hasActiveTrack = Boolean(currentTrack) || isLoading;
+  const isExpandedOpen = isExpanded && hasActiveTrack;
+  const isFavorited = currentTrack
+    ? favoriteTracks.some((track) => track.id === currentTrack.id)
+    : false;
+  const qualityLabel = streamQuality ? QUALITY_LABELS[streamQuality] : null;
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -86,12 +104,6 @@ export function PlayerBar() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [togglePlayPause]);
-
-  useEffect(() => {
-    if (!hasActiveTrack) {
-      setIsExpanded(false);
-    }
-  }, [hasActiveTrack]);
 
   const playButton = (
     <Button
@@ -173,20 +185,20 @@ export function PlayerBar() {
         <div
           className={cn(
             "pointer-events-none fixed inset-0 z-50 md:hidden",
-            isExpanded && "pointer-events-auto"
+            isExpandedOpen && "pointer-events-auto"
           )}
         >
           <div
             className={cn(
               "absolute inset-0 bg-black/50 transition-opacity duration-300",
-              isExpanded ? "opacity-100" : "opacity-0"
+              isExpandedOpen ? "opacity-100" : "opacity-0"
             )}
             onClick={() => setIsExpanded(false)}
           />
           <div
             className={cn(
               "absolute inset-0 flex flex-col overflow-hidden transition-transform duration-300 ease-out",
-              isExpanded ? "translate-y-0" : "translate-y-full"
+              isExpandedOpen ? "translate-y-0" : "translate-y-full"
             )}
           >
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(178,93,54,0.95),rgba(90,48,30,0.98))]" />
@@ -219,7 +231,25 @@ export function PlayerBar() {
                     {currentTrack?.album?.title ?? "Moonsway"}
                   </p>
                 </div>
-                <div className="size-11" />
+                <div className="flex size-11 items-center justify-center">
+                  {currentTrack ? (
+                    <button
+                      type="button"
+                      onClick={() => toggleFavoriteTrack(currentTrack)}
+                      className="flex size-11 items-center justify-center rounded-full bg-white/8 transition-colors hover:bg-white/14"
+                      aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+                    >
+                      <Heart
+                        className={cn(
+                          "size-5 transition-colors",
+                          isFavorited ? "fill-white text-white" : "text-white/82"
+                        )}
+                      />
+                    </button>
+                  ) : (
+                    <div className="size-11" />
+                  )}
+                </div>
               </div>
 
               <div className="flex flex-1 flex-col justify-between gap-5 pt-4">
@@ -244,6 +274,13 @@ export function PlayerBar() {
                       <p className="mt-2 truncate text-lg text-white/72">
                         {currentTrack?.artist?.name ?? "Please wait"}
                       </p>
+                      {qualityLabel && (
+                        <div className="mt-3">
+                          <span className="inline-flex items-center rounded-full border border-white/14 bg-white/8 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-white/72">
+                            {qualityLabel}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -327,24 +364,6 @@ export function PlayerBar() {
                     </Button>
                   </div>
 
-                  <div className="flex items-center gap-3 rounded-full bg-black/18 px-4 py-3">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={toggleMute}
-                      className="size-9 rounded-full text-white hover:bg-white/10"
-                    >
-                      <VolumeIcon className="size-4.5" />
-                    </Button>
-                    <Slider
-                      min={0}
-                      max={1}
-                      step={0.01}
-                      value={[isMuted ? 0 : volume]}
-                      onValueChange={([val]) => setVolume(val)}
-                      className="flex-1 [&_[data-slot=slider-range]]:bg-white [&_[data-slot=slider-thumb]]:size-4 [&_[data-slot=slider-thumb]]:border-0 [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-track]]:h-1.5 [&_[data-slot=slider-track]]:bg-white/20"
-                    />
-                  </div>
                 </div>
               </div>
             </div>

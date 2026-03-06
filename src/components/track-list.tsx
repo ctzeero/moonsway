@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Play, Pause, Heart } from "lucide-react";
+import { Heart } from "lucide-react";
 import { usePlayerStore } from "@/stores/player-store";
 import { useLibraryStore } from "@/stores/library-store";
 import { getCoverUrl } from "@/lib/api/music-api";
@@ -10,6 +10,25 @@ import type { Track } from "@/types/music";
 interface TrackListProps {
   tracks: Track[];
   onPlay: (track: Track, index: number) => void;
+}
+
+function NowPlayingIndicator() {
+  return (
+    <span
+      className="inline-flex h-3 items-end gap-[2px] text-primary"
+      aria-hidden="true"
+    >
+      <span className="now-playing-bar h-[55%] w-[3px] rounded-full bg-current" />
+      <span
+        className="now-playing-bar h-full w-[3px] rounded-full bg-current"
+        style={{ animationDelay: "120ms" }}
+      />
+      <span
+        className="now-playing-bar h-[70%] w-[3px] rounded-full bg-current"
+        style={{ animationDelay: "240ms" }}
+      />
+    </span>
+  );
 }
 
 export function TrackList({ tracks, onPlay }: TrackListProps) {
@@ -28,8 +47,7 @@ export function TrackList({ tracks, onPlay }: TrackListProps) {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="hidden grid-cols-[2rem_1fr_1fr_2rem_4rem] items-center gap-3 border-b border-border px-4 py-2 text-xs font-medium uppercase tracking-wider text-muted-foreground md:grid">
-        <span className="text-center">#</span>
+      <div className="hidden grid-cols-[1fr_1fr_2rem_4rem] items-center gap-3 border-b border-border px-4 py-2 text-xs font-medium uppercase tracking-wider text-muted-foreground md:grid">
         <span>Title</span>
         <span>Album</span>
         <span />
@@ -49,35 +67,14 @@ export function TrackList({ tracks, onPlay }: TrackListProps) {
           <div
             key={`${track.id}-${index}`}
             className={cn(
-              "group grid grid-cols-[auto_1fr_auto] gap-x-3 gap-y-1 rounded-2xl border border-border/60 bg-card/60 px-3 py-3 transition-colors hover:bg-accent/40 md:grid-cols-[2rem_1fr_1fr_2rem_4rem] md:items-center md:gap-3 md:rounded-md md:border-0 md:bg-transparent md:px-4 md:py-2 md:hover:bg-accent/50",
+              "group grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 rounded-2xl border border-border/60 bg-card/60 px-3 py-3 transition-colors hover:bg-accent/40 md:grid-cols-[1fr_1fr_2rem_4rem] md:items-center md:gap-3 md:rounded-md md:border-0 md:bg-transparent md:px-4 md:py-2 md:hover:bg-accent/50",
               isCurrent && "bg-accent/30"
             )}
           >
-            {/* Number / play icon */}
-            <button
-              onClick={() => onPlay(track, index)}
-              className="flex size-9 items-center justify-center rounded-full bg-muted/60 text-sm text-muted-foreground md:size-auto md:rounded-none md:bg-transparent"
-            >
-              {isCurrent && isPlaying ? (
-                <Pause className="size-3.5 text-primary" />
-              ) : (
-                <span className="group-hover:hidden">
-                  {isCurrent ? (
-                    <Play className="size-3.5 text-primary" />
-                  ) : (
-                    index + 1
-                  )}
-                </span>
-              )}
-              {!isCurrent && (
-                <Play className="hidden size-3.5 group-hover:block" />
-              )}
-            </button>
-
             {/* Title + artist */}
             <button
               onClick={() => onPlay(track, index)}
-              className="col-start-2 row-span-2 flex min-w-0 items-center gap-3 text-left md:col-start-auto md:row-span-1"
+              className="row-span-2 flex min-w-0 items-center gap-3 text-left md:row-span-1"
             >
               {canShowCover ? (
                 <img
@@ -98,14 +95,17 @@ export function TrackList({ tracks, onPlay }: TrackListProps) {
                 <div className="size-10 shrink-0 rounded-xl bg-muted md:size-8 md:rounded" />
               )}
               <div className="min-w-0">
-                <p
-                  className={cn(
-                    "truncate text-sm font-medium",
-                    isCurrent && "text-primary"
-                  )}
-                >
-                  {track.title}
-                </p>
+                <div className="flex items-center gap-2">
+                  {isCurrent && isPlaying ? <NowPlayingIndicator /> : null}
+                  <p
+                    className={cn(
+                      "truncate text-sm font-medium",
+                      isCurrent && "text-primary"
+                    )}
+                  >
+                    {track.title}
+                  </p>
+                </div>
                 <p className="truncate text-xs text-muted-foreground">
                   {track.artist?.name ?? "Unknown Artist"}
                 </p>

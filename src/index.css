@@ -163,3 +163,24 @@
     min-height: 100vh;
   }
 }
+
+@keyframes now-playing-bar {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+    opacity: 0.55;
+  }
+
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+  .now-playing-bar {
+    animation: now-playing-bar 0.9s ease-in-out infinite;
+    transform-origin: bottom;
+    will-change: transform;
+  }
+}

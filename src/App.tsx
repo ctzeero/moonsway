@@ -71,28 +71,32 @@ function NavItem({
 function MobileHeader() {
   const { pathname } = useLocation();
   const mobileTitle = getMobileTitle(pathname);
+  const activeNavItem = NAV_ITEMS.find((item) => isRouteActive(pathname, item.to));
+  const showSearch = isRouteActive(pathname, "/search");
+  const showTitle = showSearch || !activeNavItem;
 
   return (
-    <header className="relative z-30 shrink-0 border-b border-border/50 bg-background/78 px-4 pb-4 pt-[calc(env(safe-area-inset-top)+1rem)] backdrop-blur-xl md:hidden">
-      <div className="rounded-[1.75rem] border border-border/60 bg-card/82 p-4 shadow-[0_18px_45px_rgba(0,0,0,0.22)]">
-        <div className="flex items-center gap-3">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/12 ring-1 ring-primary/20">
-            <img src={logoSrc} alt="Moonsway" className="size-7" />
-          </div>
+    <header className="relative z-30 shrink-0 border-b border-border/50 bg-background/72 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-xl md:hidden">
+      <div className="flex items-center gap-3">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/12 ring-1 ring-primary/20">
+          <img src={logoSrc} alt="Moonsway" className="size-6" />
+        </div>
+        {showTitle ? (
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-primary/80">
-              Moonsway
-            </p>
-            <h1 className="truncate text-lg font-semibold tracking-tight">
+            <h1 className="truncate text-xl font-semibold tracking-tight">
               {mobileTitle}
             </h1>
           </div>
-          <UserButtonCompact />
-        </div>
+        ) : (
+          <div className="flex-1" />
+        )}
+        <UserButtonCompact />
+      </div>
+      {showSearch ? (
         <div className="mt-3">
           <SearchBar />
         </div>
-      </div>
+      ) : null}
     </header>
   );
 }
@@ -125,6 +129,9 @@ function MobileNav() {
 }
 
 function AppLayout() {
+  const { pathname } = useLocation();
+  const showDesktopSearch = isRouteActive(pathname, "/search");
+
   return (
     <div className="flex h-dvh min-h-dvh w-screen flex-col overflow-hidden bg-background bg-[radial-gradient(circle_at_top,rgba(236,72,153,0.14),transparent_36%)] text-foreground">
       <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -145,9 +152,11 @@ function AppLayout() {
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background/40">
           <MobileHeader />
 
-          <header className="hidden shrink-0 items-center gap-4 border-b border-border/50 bg-background/70 px-6 py-4 md:flex">
-            <SearchBar />
-          </header>
+          {showDesktopSearch ? (
+            <header className="hidden shrink-0 items-center border-b border-border/50 bg-background/64 px-6 py-3 md:flex">
+              <SearchBar />
+            </header>
+          ) : null}
 
           <main className="themed-scroll flex-1 overflow-y-auto overscroll-contain">
             <Routes>
