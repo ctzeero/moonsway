@@ -19,6 +19,8 @@ const REDIRECT_URI =
 const TOKEN_KEY = "moonsway-spotify-token";
 const VERIFIER_KEY = "moonsway-spotify-verifier";
 
+console.log("REDIRECT_URI >>>", REDIRECT_URI);
+
 // -- Token management (js-cache-storage: cache localStorage reads in memory) --
 
 let cachedToken: string | null | undefined = undefined;
