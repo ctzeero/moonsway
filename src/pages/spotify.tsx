@@ -410,25 +410,11 @@ function UnmatchedRow({ track }: { track: UnmatchedTrack }) {
 
 function DoneStep() {
   const { results, reset } = useSpotifyStore();
-  const addFavoriteTracks = useLibraryStore((s) => s.addFavoriteTracks);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const hasInitializedExpansion = useRef(true);
-
   const totalMatched = results.reduce((n, r) => n + r.matched.length, 0);
   const totalUnmatched = results.reduce((n, r) => n + r.unmatched.length, 0);
-  const playlistsWithMatches = results.filter((result) => result.matched.length > 0);
-
-  useEffect(() => {
-    addFavoriteTracks(results.flatMap((result) => result.matched));
-  }, [results, addFavoriteTracks]);
-
-  useEffect(() => {
-    if (hasInitializedExpansion.current || playlistsWithMatches.length === 0) return;
-    hasInitializedExpansion.current = true;
-    if (!expandedId) {
-      setExpandedId(playlistsWithMatches[0].spotifyId);
-    }
-  }, [expandedId, playlistsWithMatches]);
+  const [expandedId, setExpandedId] = useState<string | null>(
+    () => results.find((result) => result.matched.length > 0)?.spotifyId ?? null
+  );
 
   return (
     <div className="flex flex-col gap-6">

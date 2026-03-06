@@ -81,6 +81,7 @@ interface PlayerActions {
 
 const audio = new Audio();
 audio.preload = "auto";
+let activeLoadRequestId = 0;
 
 // -- Shuffle utility --
 
@@ -99,6 +100,12 @@ const MAX_QUEUE_SIZE = 100;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function stopAudioPlayback(): void {
+  audio.pause();
+  audio.removeAttribute("src");
+  audio.load();
 }
 
 function readPersistedPlayerState(): PersistedPlayerState | null {
@@ -225,10 +232,15 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
     }
 
     async function loadAndPlay(track: Track, startAt = 0): Promise<void> {
+      const requestId = ++activeLoadRequestId;
+
+      stopAudioPlayback();
       set({
         isLoading: true,
+        isPlaying: false,
         currentTrack: track,
         streamUrl: null,
+        duration: 0,
         currentTime: Math.max(0, startAt),
       });
       persistPlayerState(true);
@@ -255,11 +267,19 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
 
       try {
         const url = await getStreamUrl(track.id, get().quality);
+        if (requestId !== activeLoadRequestId) return;
+
         audio.src = url;
+        audio.load();
         set({ streamUrl: url });
 
         await new Promise<void>((resolve, reject) => {
           const onCanPlay = () => {
+            if (requestId !== activeLoadRequestId) {
+              cleanup();
+              reject(new Error("stale-load"));
+              return;
+            }
             cleanup();
             resolve();
           };
@@ -274,6 +294,7 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
           audio.addEventListener("canplay", onCanPlay, { once: true });
           audio.addEventListener("error", onError, { once: true });
         });
+        if (requestId !== activeLoadRequestId) return;
 
         if (startAt > 0) {
           const safeStartAt =
@@ -285,26 +306,43 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
         }
 
         await audio.play();
+        if (requestId !== activeLoadRequestId) {
+          stopAudioPlayback();
+          return;
+        }
         set({ isPlaying: true, isLoading: false });
         persistPlayerState(true);
       } catch (error) {
+        if (requestId !== activeLoadRequestId) return;
+
         console.error("[Player] Failed to play track:", error);
         set({ isLoading: false, isPlaying: false });
         persistPlayerState(true);
 
         // Try fallback to LOSSLESS if hi-res failed
         const state = get();
-        if (state.quality === "HI_RES_LOSSLESS") {
+        if (
+          state.quality === "HI_RES_LOSSLESS" &&
+          error instanceof Error &&
+          error.message !== "stale-load"
+        ) {
           try {
             const url = await getStreamUrl(track.id, "LOSSLESS");
+            if (requestId !== activeLoadRequestId) return;
+
             audio.src = url;
+            audio.load();
             set({ streamUrl: url });
             if (startAt > 0) {
               audio.currentTime = Math.max(0, startAt);
               set({ currentTime: Math.max(0, startAt) });
             }
             await audio.play();
-            set({ isPlaying: true });
+            if (requestId !== activeLoadRequestId) {
+              stopAudioPlayback();
+              return;
+            }
+            set({ isPlaying: true, isLoading: false });
             persistPlayerState(true);
           } catch {
             console.error("[Player] Fallback to LOSSLESS also failed");
@@ -555,6 +593,7 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
       },
 
       clearQueue() {
+        activeLoadRequestId++;
         audio.pause();
         audio.src = "";
         set({

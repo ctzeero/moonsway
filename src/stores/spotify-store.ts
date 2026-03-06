@@ -20,6 +20,7 @@ import {
   type SpotifyTrack,
 } from "@/lib/spotify";
 import { searchTracks } from "@/lib/api/tidal";
+import { useLibraryStore } from "@/stores/library-store";
 import type { Track } from "@/types/music";
 
 // -- Types --
@@ -116,7 +117,11 @@ export const useSpotifyStore = create<SpotifyState>((set, get) => ({
   togglePlaylist: (id: string) => {
     set((state) => {
       const next = new Set(state.selectedIds);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return { selectedIds: next };
     });
   },
@@ -273,6 +278,9 @@ export const useSpotifyStore = create<SpotifyState>((set, get) => ({
     }
 
     importController = null;
+    useLibraryStore
+      .getState()
+      .addFavoriteTracks(results.flatMap((result) => result.matched));
     set({ step: "done", results, progress: null });
   },
 
