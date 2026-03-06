@@ -73,7 +73,7 @@ function MobileHeader() {
   const mobileTitle = getMobileTitle(pathname);
 
   return (
-    <header className="shrink-0 border-b border-border/50 bg-background/78 px-4 pb-4 pt-[calc(env(safe-area-inset-top)+1rem)] backdrop-blur-xl md:hidden">
+    <header className="relative z-30 shrink-0 border-b border-border/50 bg-background/78 px-4 pb-4 pt-[calc(env(safe-area-inset-top)+1rem)] backdrop-blur-xl md:hidden">
       <div className="rounded-[1.75rem] border border-border/60 bg-card/82 p-4 shadow-[0_18px_45px_rgba(0,0,0,0.22)]">
         <div className="flex items-center gap-3">
           <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/12 ring-1 ring-primary/20">

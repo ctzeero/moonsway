@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
+// Dev server bind address (use 127.0.0.1 for local; production URL goes in .env as VITE_SPOTIFY_REDIRECT_URI)
 const host = process.env.TAURI_DEV_HOST || "127.0.0.1";
 
 export default defineConfig({
@@ -17,7 +18,6 @@ export default defineConfig({
     port: 1420, 
     strictPort: true,
     host,
-    allowedHosts: [".ngrok-free.app", host],
     hmr: host
       ? {
           protocol: "ws",

@@ -8,13 +8,14 @@
  * 4. Token saved to localStorage, used for all API calls
  */
 
-const SPOTIFY_CLIENT_ID = "86de92834443444d8a2eabc3ff174b83";
+const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID ?? "";
 const SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize";
 const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
 const SPOTIFY_SCOPES =
   "playlist-read-private playlist-read-collaborative user-library-read";
 
-const REDIRECT_URI = "http://127.0.0.1:1420/spotify";
+const REDIRECT_URI =
+  import.meta.env.VITE_SPOTIFY_REDIRECT_URI ?? "http://127.0.0.1:1420/spotify";
 const TOKEN_KEY = "moonsway-spotify-token";
 const VERIFIER_KEY = "moonsway-spotify-verifier";
 

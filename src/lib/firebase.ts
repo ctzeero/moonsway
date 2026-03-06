@@ -2,16 +2,15 @@ import { initializeApp, type FirebaseApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, type Auth } from "firebase/auth";
 
 // Firebase web config is public by design — no secrets here.
-// Self-hosters can override via localStorage key "moonsway-firebase-config".
-// Leave DEFAULT_CONFIG empty strings until you add your own Firebase project.
+// Set in .env (VITE_FIREBASE_*) or override via localStorage key "moonsway-firebase-config".
 const DEFAULT_CONFIG = {
-  apiKey: "AIzaSyAy3HyO7ihUC-iJVfPWf3CObJEqlci9TZo",
-  authDomain: "moonsway-7b948.firebaseapp.com",
-  projectId: "moonsway-7b948",
-  storageBucket: "moonsway-7b948.firebasestorage.app",
-  messagingSenderId: "17544628860",
-  appId: "1:17544628860:web:86ac6ceb58de0607ce97f9",
-  measurementId: "G-CT7G7ZH4TG"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY ?? "",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ?? "",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID ?? "",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ?? "",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? "",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID ?? "",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID ?? "",
 };
 
 function getStoredConfig() {
