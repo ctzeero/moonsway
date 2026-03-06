@@ -11,6 +11,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Music2,
+  Sparkles,
   CheckSquare,
   Square,
   ChevronDown,
@@ -19,6 +20,7 @@ import {
   RefreshCw,
   LogOut,
   Check,
+  CheckCheck,
   X,
   Loader2,
 } from "lucide-react";
@@ -170,15 +172,39 @@ function PickStep() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold">Choose playlists to import</h2>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => (allSelected ? deselectAll() : selectAll())}
-        >
-          {allSelected ? "Deselect all" : "Select all"}
-        </Button>
+      <div className="rounded-2xl border border-[#1DB954]/20 bg-[radial-gradient(circle_at_top_left,_rgba(29,185,84,0.18),_transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.28)]">
+        <div className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-[#6ee7a8]">
+          <Sparkles className="size-3.5" />
+          Ready to import
+        </div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold">Choose playlists to import</h2>
+            <p className="text-sm text-muted-foreground">
+              {selectedIds.size} of {playlists.length} selected
+            </p>
+          </div>
+          <Button
+            disabled={selectedIds.size === 0}
+            onClick={() => startImport()}
+            className="h-12 w-full rounded-xl bg-[#1DB954] px-5 text-base font-semibold text-black shadow-[0_12px_30px_rgba(29,185,84,0.28)] transition-transform hover:scale-[1.01] hover:bg-[#23c759] disabled:scale-100 disabled:opacity-50 sm:w-auto"
+          >
+            <Music2 className="size-4" />
+            Import {selectedIds.size > 0 ? selectedIds.size : ""} playlist
+            {selectedIds.size !== 1 ? "s" : ""}
+          </Button>
+        </div>
+
+        <div className="mt-3 flex items-center justify-end gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => (allSelected ? deselectAll() : selectAll())}
+            className="shrink-0 rounded-lg px-3"
+          >
+            {allSelected ? "Deselect all" : "Select all"}
+          </Button>
+        </div>
       </div>
 
       <div className="relative">
@@ -209,20 +235,6 @@ function PickStep() {
             ))}
           </div>
         )}
-      </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground">
-          {selectedIds.size} of {playlists.length} selected
-        </p>
-        <Button
-          disabled={selectedIds.size === 0}
-          onClick={() => startImport()}
-          className="bg-[#1DB954] text-black hover:bg-[#1DB954]/90 disabled:opacity-50"
-        >
-          Import {selectedIds.size > 0 ? selectedIds.size : ""} playlist
-          {selectedIds.size !== 1 ? "s" : ""}
-        </Button>
       </div>
     </div>
   );
@@ -295,7 +307,7 @@ function UnmatchedRow({ track }: { track: UnmatchedTrack }) {
   const [results, setResults] = useState<Track[]>([]);
   const [searching, setSearching] = useState(false);
   const [resolved, setResolved] = useState<Track | null>(null);
-  const addFavoriteTrack = useLibraryStore((s) => s.toggleFavoriteTrack);
+  const addFavoriteTrack = useLibraryStore((s) => s.addFavoriteTrack);
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -398,43 +410,47 @@ function UnmatchedRow({ track }: { track: UnmatchedTrack }) {
 
 function DoneStep() {
   const { results, reset } = useSpotifyStore();
-  const addToLibrary = useLibraryStore((s) => s.toggleFavoriteTrack);
+  const addFavoriteTracks = useLibraryStore((s) => s.addFavoriteTracks);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [saved, setSaved] = useState<Set<string>>(new Set());
+  const hasInitializedExpansion = useRef(true);
 
   const totalMatched = results.reduce((n, r) => n + r.matched.length, 0);
   const totalUnmatched = results.reduce((n, r) => n + r.unmatched.length, 0);
+  const playlistsWithMatches = results.filter((result) => result.matched.length > 0);
 
-  const handleSave = (result: (typeof results)[0]) => {
-    result.matched.forEach((t) => addToLibrary(t));
-    setSaved((prev) => new Set([...prev, result.spotifyId]));
-  };
+  useEffect(() => {
+    addFavoriteTracks(results.flatMap((result) => result.matched));
+  }, [results, addFavoriteTracks]);
 
-  const handleSaveAll = () => {
-    results.forEach((r) => r.matched.forEach((t) => addToLibrary(t)));
-    setSaved(new Set(results.map((r) => r.spotifyId)));
-  };
+  useEffect(() => {
+    if (hasInitializedExpansion.current || playlistsWithMatches.length === 0) return;
+    hasInitializedExpansion.current = true;
+    if (!expandedId) {
+      setExpandedId(playlistsWithMatches[0].spotifyId);
+    }
+  }, [expandedId, playlistsWithMatches]);
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-card/40 p-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Import complete</h2>
+          <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-[#6ee7a8]">
+            <CheckCheck className="size-3.5" />
+            Saved automatically
+          </div>
+          <h2 className="text-lg font-semibold">Imported to your library</h2>
           <p className="text-sm text-muted-foreground">
-            {totalMatched} tracks matched · {totalUnmatched} unmatched
+            {totalMatched} tracks saved to Library
+            {totalUnmatched > 0 ? ` · ${totalUnmatched} unmatched need review` : ""}
           </p>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex flex-col gap-2 sm:items-end">
+          <p className="text-sm text-muted-foreground">
+            Expand a playlist below to see what was saved.
+          </p>
           <Button variant="outline" size="sm" onClick={() => reset()}>
             <RefreshCw className="size-4" />
             Import more
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleSaveAll}
-            disabled={saved.size === results.length}
-          >
-            Save all to library
           </Button>
         </div>
       </div>
@@ -442,21 +458,17 @@ function DoneStep() {
       <div className="space-y-3">
         {results.map((result) => {
           const isExpanded = expandedId === result.spotifyId;
-          const isSaved = saved.has(result.spotifyId);
+          const hasSavedTracks = result.matched.length > 0;
 
           return (
             <div
               key={result.spotifyId}
               className="rounded-lg border border-border/60 overflow-hidden"
             >
-              <div
-                role="button"
-                tabIndex={0}
+              <button
+                type="button"
                 onClick={() =>
                   setExpandedId(isExpanded ? null : result.spotifyId)
-                }
-                onKeyDown={(e) =>
-                  e.key === "Enter" && setExpandedId(isExpanded ? null : result.spotifyId)
                 }
                 className="flex w-full cursor-pointer items-center gap-3 px-4 py-3 hover:bg-accent/40"
               >
@@ -476,7 +488,7 @@ function DoneStep() {
                   <p className="truncate font-medium">{result.name}</p>
                   <p className="text-xs text-muted-foreground">
                     <span className="text-green-500">
-                      {result.matched.length} matched
+                      {result.matched.length} saved
                     </span>
                     {result.unmatched.length > 0 && (
                       <span className="ml-2 text-destructive">
@@ -486,38 +498,60 @@ function DoneStep() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {isSaved ? (
-                    <span className="text-xs text-green-500">Saved</span>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSave(result);
-                      }}
-                    >
-                      Save to library
-                    </Button>
-                  )}
+                  <span className="rounded-full border border-[#1DB954]/20 bg-[#1DB954]/10 px-2.5 py-1 text-xs font-medium text-[#6ee7a8]">
+                    {hasSavedTracks ? "Saved to library" : "No matches saved"}
+                  </span>
                   {isExpanded ? (
                     <ChevronUp className="size-4 text-muted-foreground" />
                   ) : (
                     <ChevronDown className="size-4 text-muted-foreground" />
                   )}
                 </div>
-              </div>
+              </button>
 
-              {isExpanded && result.unmatched.length > 0 && (
+              {isExpanded && (
                 <div className="border-t border-border/60 bg-muted/20 p-4">
-                  <p className="mb-3 text-sm font-medium text-muted-foreground">
-                    Unmatched tracks — search TIDAL manually:
-                  </p>
-                  <div className="space-y-2">
-                    {result.unmatched.map((t) => (
-                      <UnmatchedRow key={t.spotifyId} track={t} />
-                    ))}
-                  </div>
+                  {result.matched.length > 0 && (
+                    <div>
+                      <p className="mb-3 text-sm font-medium text-muted-foreground">
+                        Saved to library
+                      </p>
+                      <div className="space-y-2">
+                        {result.matched.map((track) => (
+                          <div
+                            key={track.id}
+                            className="flex items-center gap-3 rounded-lg border border-border/50 bg-background/50 px-3 py-2.5"
+                          >
+                            <img
+                              src={getCoverUrl(track.album.cover, "80")}
+                              alt={track.album.title}
+                              className="size-10 shrink-0 rounded object-cover"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">{track.title}</p>
+                              <p className="truncate text-xs text-muted-foreground">
+                                {track.artist.name} · {track.album.title}
+                              </p>
+                            </div>
+                            <Check className="size-4 shrink-0 text-green-500" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {result.unmatched.length > 0 && (
+                    <div className={cn(result.matched.length > 0 && "mt-4")}>
+                      <p className="mb-3 text-sm font-medium text-muted-foreground">
+                        Unmatched tracks — search TIDAL manually:
+                      </p>
+                      <div className="space-y-2">
+                        {result.unmatched.map((t) => (
+                          <UnmatchedRow key={t.spotifyId} track={t} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

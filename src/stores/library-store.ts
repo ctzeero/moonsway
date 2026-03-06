@@ -17,6 +17,8 @@ interface LibraryState {
 }
 
 interface LibraryActions {
+  addFavoriteTrack: (track: Track) => void;
+  addFavoriteTracks: (tracks: Track[]) => void;
   toggleFavoriteTrack: (track: Track) => void;
   toggleFavoriteAlbum: (album: Album) => void;
   toggleFavoriteArtist: (artist: ArtistMinified) => void;
@@ -36,6 +38,29 @@ export const useLibraryStore = create<LibraryState & LibraryActions>()(
       favoriteAlbums: [],
       favoriteArtists: [],
       history: [],
+
+      addFavoriteTrack(track) {
+        const state = get();
+        if (state.favoriteTracks.some((t) => t.id === track.id)) return;
+        set({ favoriteTracks: [track, ...state.favoriteTracks] });
+      },
+
+      addFavoriteTracks(tracks) {
+        if (tracks.length === 0) return;
+
+        const state = get();
+        const existingIds = new Set(state.favoriteTracks.map((track) => track.id));
+        const freshTracks: Track[] = [];
+
+        for (const track of tracks) {
+          if (existingIds.has(track.id)) continue;
+          existingIds.add(track.id);
+          freshTracks.push(track);
+        }
+
+        if (freshTracks.length === 0) return;
+        set({ favoriteTracks: [...freshTracks, ...state.favoriteTracks] });
+      },
 
       toggleFavoriteTrack(track) {
         const state = get();
