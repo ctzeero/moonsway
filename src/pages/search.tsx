@@ -104,14 +104,14 @@ export function SearchPage() {
   }, []);
 
   const handlePlayTrack = useCallback(
-    (track: Track, _index: number) => {
+    (track: Track) => {
       playTrack(track, tracks);
     },
     [playTrack, tracks]
   );
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-5 p-4 sm:gap-6 sm:p-6">
       {/* Results */}
       {!hasSearched ? (
         <div className="flex flex-1 flex-col items-center justify-center text-muted-foreground">
@@ -126,7 +126,7 @@ export function SearchPage() {
         </div>
       ) : (
         <Tabs defaultValue="tracks" className="flex-1">
-          <TabsList>
+          <TabsList className="w-full justify-start sm:w-fit">
             <TabsTrigger value="tracks" className="gap-1.5">
               <Music className="size-3.5" />
               Tracks ({tracks.length})
@@ -182,7 +182,7 @@ function EmptyTab({ message }: { message: string }) {
 
 function AlbumGrid({ albums }: { albums: Album[] }) {
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] sm:gap-4">
       {albums.map((album) => {
         const coverUrl = album.cover ? getCoverUrl(album.cover, "320") : "";
         return (
@@ -215,7 +215,7 @@ function AlbumGrid({ albums }: { albums: Album[] }) {
 
 function ArtistGrid({ artists }: { artists: ArtistMinified[] }) {
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] sm:gap-4">
       {artists.map((artist) => {
         const pictureUrl = artist.picture
           ? getArtistPictureUrl(artist.picture, "320")

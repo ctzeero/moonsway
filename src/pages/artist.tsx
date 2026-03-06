@@ -53,7 +53,7 @@ export function ArtistPage() {
   }, [id]);
 
   const handlePlayTrack = useCallback(
-    (track: Track, _index: number) => {
+    (track: Track) => {
       if (artist) {
         playTrack(track, artist.tracks);
       }
@@ -91,34 +91,37 @@ export function ArtistPage() {
   return (
     <div className="flex flex-1 flex-col">
       {/* Header */}
-      <div className="relative flex items-end gap-6 p-6 pb-4">
+      <div className="relative flex flex-col gap-4 p-4 pb-4 sm:flex-row sm:items-end sm:gap-6 sm:p-6">
         <button
           onClick={() => navigate(-1)}
-          className="absolute left-6 top-6 rounded-full p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="z-10 flex items-center gap-2 self-start rounded-full border border-border/60 bg-card/80 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:absolute sm:left-6 sm:top-6 sm:border-0 sm:bg-transparent sm:px-1 sm:py-1"
         >
           <ArrowLeft className="size-5" />
+          <span className="sm:hidden">Back</span>
         </button>
 
         {pictureUrl ? (
           <img
             src={pictureUrl}
             alt=""
-            className="size-40 shrink-0 rounded-full object-cover shadow-lg"
+            className="size-32 shrink-0 rounded-full object-cover shadow-lg sm:size-40"
           />
         ) : (
-          <div className="size-40 shrink-0 rounded-full bg-muted" />
+          <div className="size-32 shrink-0 rounded-full bg-muted sm:size-40" />
         )}
 
         <div className="flex min-w-0 flex-col gap-2">
           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Artist
           </span>
-          <h1 className="text-3xl font-bold tracking-tight">{artist.name}</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            {artist.name}
+          </h1>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-3 px-6 pb-2">
+      <div className="flex items-center gap-3 px-4 pb-2 sm:px-6">
         {artist.tracks.length > 0 && (
           <button
             onClick={handlePlayAll}
@@ -143,7 +146,7 @@ export function ArtistPage() {
 
       {/* Top tracks */}
       {artist.tracks.length > 0 && (
-        <section className="px-2 pb-6">
+        <section className="px-0 pb-6 sm:px-2">
           <h2 className="px-4 pb-3 pt-4 text-lg font-semibold">Popular Tracks</h2>
           <TrackList tracks={artist.tracks} onPlay={handlePlayTrack} />
         </section>
@@ -151,9 +154,9 @@ export function ArtistPage() {
 
       {/* Albums */}
       {artist.albums.length > 0 && (
-        <section className="px-6 pb-8">
+        <section className="px-4 pb-8 sm:px-6">
           <h2 className="pb-4 text-lg font-semibold">Discography</h2>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] sm:gap-4">
             {artist.albums.map((album) => {
               const coverUrl = album.cover ? getCoverUrl(album.cover, "320") : "";
               return (
@@ -191,9 +194,9 @@ export function ArtistPage() {
 
 function ArtistSkeleton() {
   return (
-    <div className="flex flex-1 flex-col p-6">
-      <div className="flex items-end gap-6">
-        <Skeleton className="size-40 rounded-full" />
+    <div className="flex flex-1 flex-col p-4 sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-6">
+        <Skeleton className="size-32 rounded-full sm:size-40" />
         <div className="flex flex-col gap-3">
           <Skeleton className="h-3 w-16" />
           <Skeleton className="h-8 w-48" />

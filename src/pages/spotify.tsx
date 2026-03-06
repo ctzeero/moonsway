@@ -170,7 +170,7 @@ function PickStep() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-lg font-semibold">Choose playlists to import</h2>
         <Button
           variant="ghost"
@@ -211,7 +211,7 @@ function PickStep() {
         )}
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
           {selectedIds.size} of {playlists.length} selected
         </p>
@@ -417,14 +417,14 @@ function DoneStep() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold">Import complete</h2>
           <p className="text-sm text-muted-foreground">
             {totalMatched} tracks matched · {totalUnmatched} unmatched
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Button variant="outline" size="sm" onClick={() => reset()}>
             <RefreshCw className="size-4" />
             Import more
@@ -553,8 +553,8 @@ export function SpotifyPage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-8">
-      <div className="mb-8 flex items-center gap-3">
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
+      <div className="mb-8 flex items-start gap-3">
         <div className="flex size-10 items-center justify-center rounded-full bg-[#1DB954]/10">
           <Music2 className="size-5 text-[#1DB954]" />
         </div>

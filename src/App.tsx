@@ -1,8 +1,9 @@
-import { BrowserRouter, Routes, Route, NavLink, Navigate } from "react-router";
+import { type ComponentType } from "react";
+import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from "react-router";
 import { Home, Search, Library, Music2 } from "lucide-react";
 import { PlayerBar } from "@/components/player-bar";
 import { SearchBar } from "@/components/search-bar";
-import { UserButton } from "@/components/user-button";
+import { UserButton, UserButtonCompact } from "@/components/user-button";
 import { HomePage } from "@/pages/home";
 import { SearchPage } from "@/pages/search";
 import { AlbumPage } from "@/pages/album";
@@ -13,18 +14,45 @@ import { SpotifyPage } from "@/pages/spotify";
 import logoSrc from "@/assets/icons/moonsway.png";
 import { cn } from "@/lib/utils";
 
+const NAV_ITEMS = [
+  { to: "/", icon: Home, label: "Home", mobileTitle: "Discover" },
+  { to: "/search", icon: Search, label: "Search", mobileTitle: "Search" },
+  { to: "/library", icon: Library, label: "Library", mobileTitle: "Library" },
+  { to: "/spotify", icon: Music2, label: "Import", mobileTitle: "Spotify Import" },
+] as const;
+
+function isRouteActive(pathname: string, to: string) {
+  if (to === "/") return pathname === "/";
+  return pathname === to || pathname.startsWith(`${to}/`);
+}
+
+function getMobileTitle(pathname: string) {
+  const navMatch = NAV_ITEMS.find((item) => isRouteActive(pathname, item.to));
+
+  if (navMatch) {
+    return navMatch.mobileTitle;
+  }
+
+  if (pathname.startsWith("/album/")) return "Album";
+  if (pathname.startsWith("/artist/")) return "Artist";
+  if (pathname.startsWith("/playlist/")) return "Playlist";
+
+  return "Moonsway";
+}
+
 function NavItem({
   to,
   icon: Icon,
   label,
 }: {
   to: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   label: string;
 }) {
   return (
     <NavLink
       to={to}
+      end={to === "/"}
       className={({ isActive }) =>
         cn(
           "relative flex items-center gap-2 overflow-hidden rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
@@ -40,36 +68,88 @@ function NavItem({
   );
 }
 
+function MobileHeader() {
+  const { pathname } = useLocation();
+  const mobileTitle = getMobileTitle(pathname);
+
+  return (
+    <header className="shrink-0 border-b border-border/50 bg-background/78 px-4 pb-4 pt-[calc(env(safe-area-inset-top)+1rem)] backdrop-blur-xl md:hidden">
+      <div className="rounded-[1.75rem] border border-border/60 bg-card/82 p-4 shadow-[0_18px_45px_rgba(0,0,0,0.22)]">
+        <div className="flex items-center gap-3">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/12 ring-1 ring-primary/20">
+            <img src={logoSrc} alt="Moonsway" className="size-7" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-primary/80">
+              Moonsway
+            </p>
+            <h1 className="truncate text-lg font-semibold tracking-tight">
+              {mobileTitle}
+            </h1>
+          </div>
+          <UserButtonCompact />
+        </div>
+        <div className="mt-3">
+          <SearchBar />
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function MobileNav() {
+  return (
+    <nav className="shrink-0 bg-background/72 px-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 backdrop-blur-xl md:hidden">
+      <div className="grid grid-cols-4 gap-2">
+        {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={to === "/"}
+            className={({ isActive }) =>
+              cn(
+                "flex min-w-0 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition-all",
+                isActive
+                  ? "bg-primary text-primary-foreground shadow-[0_12px_24px_rgba(236,72,153,0.24)]"
+                  : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
+              )
+            }
+          >
+            <Icon className="size-[18px]" />
+            <span className="truncate">{label}</span>
+          </NavLink>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
 function AppLayout() {
   return (
-    <div className="flex h-screen w-screen flex-col bg-background bg-[radial-gradient(circle_at_top,rgba(236,72,153,0.14),transparent_36%)] text-foreground">
-      {/* Sidebar + Main Content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <aside className="flex w-60 shrink-0 flex-col border-r border-border/60 bg-sidebar/85 p-4">
+    <div className="flex h-dvh min-h-dvh w-screen flex-col overflow-hidden bg-background bg-[radial-gradient(circle_at_top,rgba(236,72,153,0.14),transparent_36%)] text-foreground">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <aside className="hidden w-60 shrink-0 flex-col border-r border-border/60 bg-sidebar/85 p-4 md:flex">
           <div className="mb-6 flex items-center gap-2">
             <img src={logoSrc} alt="Moonsway" className="size-8" />
           </div>
           <nav className="flex flex-col gap-1">
-            <NavItem to="/" icon={Home} label="Home" />
-            <NavItem to="/search" icon={Search} label="Search" />
-            <NavItem to="/library" icon={Library} label="Library" />
-            <NavItem to="/spotify" icon={Music2} label="Spotify Import" />
+            {NAV_ITEMS.map(({ to, icon, label }) => (
+              <NavItem key={to} to={to} icon={icon} label={label} />
+            ))}
           </nav>
           <div className="mt-auto">
             <UserButton />
           </div>
         </aside>
 
-        {/* Main content area with header */}
-        <div className="flex flex-1 flex-col overflow-hidden bg-background/40">
-          {/* Header with search bar */}
-          <header className="flex shrink-0 items-center gap-4 bg-background/70 px-6 py-4">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background/40">
+          <MobileHeader />
+
+          <header className="hidden shrink-0 items-center gap-4 border-b border-border/50 bg-background/70 px-6 py-4 md:flex">
             <SearchBar />
           </header>
 
-          {/* Scrollable content */}
-          <main className="themed-scroll flex-1 overflow-y-auto">
+          <main className="themed-scroll flex-1 overflow-y-auto overscroll-contain">
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/search" element={<SearchPage />} />
@@ -85,8 +165,10 @@ function AppLayout() {
         </div>
       </div>
 
-      {/* Player bar */}
-      <PlayerBar />
+      <div className="shrink-0">
+        <PlayerBar />
+        <MobileNav />
+      </div>
     </div>
   );
 }

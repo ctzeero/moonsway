@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { LogIn, LogOut, User, Chrome } from "lucide-react";
+import { LogOut, User, Chrome } from "lucide-react";
 import type { User as FirebaseUser } from "firebase/auth";
 import { useAuthStore } from "@/stores/auth-store";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,14 @@ function UserAvatar({
 const { firebaseEnabled } = useAuthStore.getState();
 
 export function UserButton() {
+  return <UserButtonBase compact={false} />;
+}
+
+export function UserButtonCompact() {
+  return <UserButtonBase compact />;
+}
+
+function UserButtonBase({ compact }: { compact: boolean }) {
   // Subscribe only to the values that drive rendering.
   // Actions (signInWithGoogle, signOut, clearError) are read in callbacks via getState().
   const { user, loading, error } = useAuthStore();
@@ -52,14 +60,27 @@ export function UserButton() {
 
   if (loading) {
     return (
-      <div className="flex h-10 items-center gap-2 px-1">
+      <div className={cn("flex h-10 items-center gap-2 px-1", compact && "px-0")}>
         <div className="size-7 animate-pulse rounded-full bg-muted" />
-        <div className="h-3 w-20 animate-pulse rounded bg-muted" />
+        {!compact && <div className="h-3 w-20 animate-pulse rounded bg-muted" />}
       </div>
     );
   }
 
   if (!user) {
+    if (compact) {
+      return (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          title="Sign in with Google"
+          onClick={() => useAuthStore.getState().signInWithGoogle()}
+        >
+          <Chrome className="size-4" />
+        </Button>
+      );
+    }
+
     return (
       <div className="flex flex-col gap-1">
         {error && (
@@ -88,14 +109,18 @@ export function UserButton() {
       <button
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-accent/70",
+          compact
+            ? "flex size-10 items-center justify-center rounded-full border border-border/60 bg-card/80 text-sm transition-colors hover:bg-accent/70"
+            : "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-accent/70",
           open && "bg-accent/70"
         )}
       >
         <UserAvatar user={user} className="size-7" />
-        <span className="flex-1 truncate text-left text-sm font-medium">
-          {user.displayName ?? user.email}
-        </span>
+        {!compact && (
+          <span className="flex-1 truncate text-left text-sm font-medium">
+            {user.displayName ?? user.email}
+          </span>
+        )}
       </button>
 
       {open && (
@@ -105,7 +130,14 @@ export function UserButton() {
             className="fixed inset-0 z-10"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute bottom-full left-0 z-20 mb-1 w-full min-w-48 rounded-lg border border-border bg-popover p-1 shadow-lg">
+          <div
+            className={cn(
+              "absolute z-20 mb-1 min-w-48 rounded-lg border border-border bg-popover p-1 shadow-lg",
+              compact
+                ? "right-0 top-[calc(100%+0.5rem)] w-56"
+                : "bottom-full left-0 w-full"
+            )}
+          >
             <div className="px-2 py-1.5">
               <p className="text-xs font-medium text-foreground">
                 {user.displayName}
@@ -130,25 +162,4 @@ export function UserButton() {
       )}
     </div>
   );
-}
-
-export function UserButtonIcon() {
-  const { user, loading } = useAuthStore();
-
-  if (loading) return null;
-
-  if (!user) {
-    return (
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        title="Sign in with Google"
-        onClick={() => useAuthStore.getState().signInWithGoogle()}
-      >
-        <LogIn className="size-4" />
-      </Button>
-    );
-  }
-
-  return <UserAvatar user={user} className="size-7" />;
 }

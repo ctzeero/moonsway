@@ -24,21 +24,23 @@ export function HomePage() {
   const progressPercent = duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0;
 
   return (
-    <div className="flex flex-1 flex-col gap-8 p-6 lg:p-8">
+    <div className="flex flex-1 flex-col gap-6 p-4 sm:gap-8 sm:p-6 lg:p-8">
       <section>
-        <h1 className="text-3xl font-semibold tracking-tight">Welcome to Moonsway</h1>
-        <p className="mt-2 text-base text-muted-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Welcome to Moonsway
+        </h1>
+        <p className="mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
           High fidelity music streaming. Press play with Moonsway.
         </p>
       </section>
 
-      <section className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-sm backdrop-blur-sm">
-        <div className="mb-4 flex items-center justify-between gap-3">
+      <section className="rounded-[1.75rem] border border-border/70 bg-card/70 p-4 shadow-sm backdrop-blur-sm sm:rounded-2xl sm:p-5">
+        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary/90">
               Continue Listening
             </p>
-            <h2 className="mt-1 text-xl font-semibold">
+            <h2 className="mt-1 text-lg font-semibold sm:text-xl">
               {currentTrack ? currentTrack.title : "Pick your next track"}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -51,7 +53,7 @@ export function HomePage() {
             <button
               type="button"
               onClick={togglePlayPause}
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:w-auto"
             >
               {isPlaying ? <Pause className="size-4 fill-current stroke-none" /> : <Play className="size-4 fill-current stroke-none" />}
               {isPlaying ? "Pause" : "Resume"}
@@ -59,7 +61,7 @@ export function HomePage() {
           ) : (
             <Link
               to="/search"
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:w-auto"
             >
               <Search className="size-4" />
               Browse Music
@@ -88,7 +90,7 @@ export function HomePage() {
           <h2 className="text-lg font-semibold">Recently Played</h2>
         </div>
         {recentTracks.length > 0 ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
             {recentTracks.map((track) => (
               <TrackCard
                 key={track.id}
@@ -176,7 +178,7 @@ function TrackCard({
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-3 rounded-xl border border-border/70 bg-card/70 p-3 text-left transition-colors hover:border-primary/50 hover:bg-accent/40"
+      className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card/70 p-3 text-left transition-colors hover:border-primary/50 hover:bg-accent/40 sm:rounded-xl"
     >
       <TrackArtwork track={track} size={52} />
       <div className="min-w-0">

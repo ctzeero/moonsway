@@ -184,7 +184,7 @@ export function SearchBar() {
   };
 
   return (
-    <div className="flex w-full max-w-3xl flex-col gap-2">
+    <div className="flex w-full max-w-none flex-col gap-2 md:max-w-3xl">
       <div ref={containerRef} className="relative w-full">
         <form className="relative w-full" onSubmit={handleSubmit}>
           <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -214,7 +214,7 @@ export function SearchBar() {
                 setShowRecentDropdown(true);
               }
             }}
-            className="h-11 rounded-xl border-border/60 bg-card/70 pl-9 pr-10"
+            className="h-10 rounded-2xl border-border/60 bg-card/70 pl-9 pr-10 md:h-11"
           />
           {isLoading && (
             <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
@@ -229,7 +229,7 @@ export function SearchBar() {
             </button>
           )}
           {!isLoading && !query && (
-            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 rounded border border-border/80 bg-background/70 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-border/80 bg-background/70 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-flex">
               /
             </kbd>
           )}

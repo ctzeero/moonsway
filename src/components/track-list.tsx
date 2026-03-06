@@ -28,7 +28,7 @@ export function TrackList({ tracks, onPlay }: TrackListProps) {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="grid grid-cols-[2rem_1fr_1fr_2rem_4rem] items-center gap-3 border-b border-border px-4 py-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+      <div className="hidden grid-cols-[2rem_1fr_1fr_2rem_4rem] items-center gap-3 border-b border-border px-4 py-2 text-xs font-medium uppercase tracking-wider text-muted-foreground md:grid">
         <span className="text-center">#</span>
         <span>Title</span>
         <span>Album</span>
@@ -49,14 +49,14 @@ export function TrackList({ tracks, onPlay }: TrackListProps) {
           <div
             key={`${track.id}-${index}`}
             className={cn(
-              "group grid grid-cols-[2rem_1fr_1fr_2rem_4rem] items-center gap-3 rounded-md px-4 py-2 transition-colors hover:bg-accent/50",
+              "group grid grid-cols-[auto_1fr_auto] gap-x-3 gap-y-1 rounded-2xl border border-border/60 bg-card/60 px-3 py-3 transition-colors hover:bg-accent/40 md:grid-cols-[2rem_1fr_1fr_2rem_4rem] md:items-center md:gap-3 md:rounded-md md:border-0 md:bg-transparent md:px-4 md:py-2 md:hover:bg-accent/50",
               isCurrent && "bg-accent/30"
             )}
           >
             {/* Number / play icon */}
             <button
               onClick={() => onPlay(track, index)}
-              className="flex items-center justify-center text-sm text-muted-foreground"
+              className="flex size-9 items-center justify-center rounded-full bg-muted/60 text-sm text-muted-foreground md:size-auto md:rounded-none md:bg-transparent"
             >
               {isCurrent && isPlaying ? (
                 <Pause className="size-3.5 text-primary" />
@@ -77,13 +77,13 @@ export function TrackList({ tracks, onPlay }: TrackListProps) {
             {/* Title + artist */}
             <button
               onClick={() => onPlay(track, index)}
-              className="flex min-w-0 items-center gap-3 text-left"
+              className="col-start-2 row-span-2 flex min-w-0 items-center gap-3 text-left md:col-start-auto md:row-span-1"
             >
               {canShowCover ? (
                 <img
                   src={coverUrl}
                   alt=""
-                  className="size-8 shrink-0 rounded object-cover"
+                  className="size-10 shrink-0 rounded-xl object-cover md:size-8 md:rounded"
                   loading="lazy"
                   onError={() => {
                     setFailedCoverIds((prev) => {
@@ -95,7 +95,7 @@ export function TrackList({ tracks, onPlay }: TrackListProps) {
                   }}
                 />
               ) : (
-                <div className="size-8 shrink-0 rounded bg-muted" />
+                <div className="size-10 shrink-0 rounded-xl bg-muted md:size-8 md:rounded" />
               )}
               <div className="min-w-0">
                 <p
@@ -109,11 +109,14 @@ export function TrackList({ tracks, onPlay }: TrackListProps) {
                 <p className="truncate text-xs text-muted-foreground">
                   {track.artist?.name ?? "Unknown Artist"}
                 </p>
+                <p className="mt-0.5 truncate text-[11px] text-muted-foreground md:hidden">
+                  {track.album?.title ?? "Single"}
+                </p>
               </div>
             </button>
 
             {/* Album */}
-            <span className="truncate text-sm text-muted-foreground">
+            <span className="hidden truncate text-sm text-muted-foreground md:block">
               {track.album?.title ?? ""}
             </span>
 
@@ -124,13 +127,13 @@ export function TrackList({ tracks, onPlay }: TrackListProps) {
                 toggleFavoriteTrack(track);
               }}
               className={cn(
-                "flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100",
+                "col-start-3 row-start-1 flex items-center justify-center self-start transition-opacity md:col-start-auto md:row-start-auto md:self-auto md:opacity-0 md:group-hover:opacity-100",
                 isFav && "opacity-100"
               )}
             >
               <Heart
                 className={cn(
-                  "size-3.5 transition-colors",
+                  "size-4 transition-colors md:size-3.5",
                   isFav
                     ? "fill-primary text-primary"
                     : "text-muted-foreground hover:text-foreground"
@@ -139,7 +142,7 @@ export function TrackList({ tracks, onPlay }: TrackListProps) {
             </button>
 
             {/* Duration */}
-            <span className="text-right text-sm tabular-nums text-muted-foreground">
+            <span className="col-start-3 row-start-2 text-right text-xs tabular-nums text-muted-foreground md:col-start-auto md:row-start-auto md:text-sm">
               {formatTime(track.duration)}
             </span>
           </div>

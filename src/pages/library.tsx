@@ -18,21 +18,21 @@ export function LibraryPage() {
   const playTrack = usePlayerStore((s) => s.playTrack);
 
   const handlePlayFavTrack = useCallback(
-    (track: Track, _index: number) => {
+    (track: Track) => {
       playTrack(track, favoriteTracks);
     },
     [playTrack, favoriteTracks]
   );
 
   const handlePlayHistoryTrack = useCallback(
-    (track: Track, _index: number) => {
+    (track: Track) => {
       playTrack(track, history);
     },
     [playTrack, history]
   );
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-5 p-4 sm:gap-6 sm:p-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Library</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -41,7 +41,7 @@ export function LibraryPage() {
       </div>
 
       <Tabs defaultValue="tracks" className="flex-1">
-        <TabsList>
+        <TabsList className="w-full justify-start sm:w-fit">
           <TabsTrigger value="tracks" className="gap-1.5">
             <Music className="size-3.5" />
             Tracks ({favoriteTracks.length})
@@ -76,7 +76,7 @@ export function LibraryPage() {
         {/* Favorite albums */}
         <TabsContent value="albums" className="mt-4">
           {favoriteAlbums.length > 0 ? (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] sm:gap-4">
               {favoriteAlbums.map((album) => {
                 const coverUrl = album.cover
                   ? getCoverUrl(album.cover, "320")
@@ -120,7 +120,7 @@ export function LibraryPage() {
         {/* Favorite artists */}
         <TabsContent value="artists" className="mt-4">
           {favoriteArtists.length > 0 ? (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] sm:gap-4">
               {favoriteArtists.map((artist) => {
                 const pictureUrl = artist.picture
                   ? getArtistPictureUrl(artist.picture, "320")
@@ -160,7 +160,7 @@ export function LibraryPage() {
         <TabsContent value="history" className="mt-4">
           {history.length > 0 ? (
             <div className="flex flex-col gap-4">
-              <div className="flex justify-end">
+              <div className="flex justify-start sm:justify-end">
                 <button
                   onClick={clearHistory}
                   className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
