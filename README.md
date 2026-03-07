@@ -17,6 +17,20 @@
 
 Moonsway is a music streaming app focused on fast discovery, high-quality playback, and a local-first library experience. It uses a React frontend inside a Tauri shell, plays music through community TIDAL proxy instances, bundles a PocketBase sidecar, and can import Spotify playlists into local Moonsway playlists.
 
+<img width="1473" height="918" alt="image" src="https://github.com/user-attachments/assets/1520cc77-555f-4b43-ae44-1a30f518d4c3" />
+
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/ad76539f-f03a-4606-8486-b56e85caffd7" alt="Moonsway screenshot 1" width="30%" />
+  <img src="https://github.com/user-attachments/assets/b94fc027-feec-4077-8e83-e794bb424883" alt="Moonsway screenshot 2" width="30%" />
+</p>
+
+
+
+https://github.com/user-attachments/assets/df6782f1-06a7-4bac-94c8-cd8c4a1ac480
+
+
+
 ## Features
 
 - Search tracks, albums, artists, and playlists
