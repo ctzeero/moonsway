@@ -1,21 +1,58 @@
-import { useCallback } from "react";
-import { Link } from "react-router";
-import { Heart, Clock, Music, Disc3, User, Trash2 } from "lucide-react";
+import {
+  type ComponentType,
+  type FormEvent,
+  useCallback,
+  useMemo,
+  useState,
+} from "react";
+import { Link, useNavigate } from "react-router";
+import {
+  Clock,
+  Disc3,
+  Heart,
+  ListMusic,
+  Music,
+  Plus,
+  Trash2,
+  User,
+} from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ActionMenu, ActionMenuItem } from "@/components/action-menu";
 import { TrackList } from "@/components/track-list";
 import { useLibraryStore } from "@/stores/library-store";
 import { usePlayerStore } from "@/stores/player-store";
-import { getCoverUrl, getArtistPictureUrl } from "@/lib/api/music-api";
-import type { Track } from "@/types/music";
+import { getArtistPictureUrl, getCoverUrl } from "@/lib/api/music-api";
+import { cn } from "@/lib/utils";
+import type { Playlist, Track } from "@/types/music";
+
+type LibraryTab = "tracks" | "albums" | "artists" | "playlists" | "history";
 
 export function LibraryPage() {
+  const navigate = useNavigate();
   const favoriteTracks = useLibraryStore((s) => s.favoriteTracks);
   const favoriteAlbums = useLibraryStore((s) => s.favoriteAlbums);
   const favoriteArtists = useLibraryStore((s) => s.favoriteArtists);
+  const playlists = useLibraryStore((s) => s.playlists);
   const history = useLibraryStore((s) => s.history);
   const clearHistory = useLibraryStore((s) => s.clearHistory);
+  const createPlaylist = useLibraryStore((s) => s.createPlaylist);
+  const deletePlaylist = useLibraryStore((s) => s.deletePlaylist);
 
   const playTrack = usePlayerStore((s) => s.playTrack);
+
+  const [activeTab, setActiveTab] = useState<LibraryTab>("tracks");
+  const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState("");
+
+  const sortedPlaylists = useMemo(
+    () =>
+      [...playlists].sort((left, right) =>
+        (right.updatedAt ?? "").localeCompare(left.updatedAt ?? "")
+      ),
+    [playlists]
+  );
 
   const handlePlayFavTrack = useCallback(
     (track: Track) => {
@@ -31,20 +68,35 @@ export function LibraryPage() {
     [playTrack, history]
   );
 
+  const handleCreatePlaylist = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+
+      const playlistId = createPlaylist(newPlaylistName);
+      if (!playlistId) return;
+
+      setNewPlaylistName("");
+      setIsCreatingPlaylist(false);
+      navigate(`/playlist/${playlistId}`);
+    },
+    [createPlaylist, navigate, newPlaylistName]
+  );
+
   return (
     <div className="flex flex-1 flex-col gap-5 p-4 sm:gap-6 sm:p-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Library</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Your favorites and listening history
-        </p>
-      </div>
-
-      <Tabs defaultValue="tracks" className="flex-1">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as LibraryTab)}
+        className="flex-1"
+      >
         <TabsList className="w-full justify-start sm:w-fit">
           <TabsTrigger value="tracks" className="gap-1.5">
             <Music className="size-3.5" />
             Tracks ({favoriteTracks.length})
+          </TabsTrigger>
+          <TabsTrigger value="playlists" className="gap-1.5">
+            <ListMusic className="size-3.5" />
+            Playlists ({playlists.length})
           </TabsTrigger>
           <TabsTrigger value="albums" className="gap-1.5">
             <Disc3 className="size-3.5" />
@@ -60,7 +112,6 @@ export function LibraryPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Favorite tracks */}
         <TabsContent value="tracks" className="mt-4">
           {favoriteTracks.length > 0 ? (
             <TrackList tracks={favoriteTracks} onPlay={handlePlayFavTrack} />
@@ -73,14 +124,72 @@ export function LibraryPage() {
           )}
         </TabsContent>
 
-        {/* Favorite albums */}
+        <TabsContent value="playlists" className="mt-4">
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                size="sm"
+                className="rounded-full"
+                onClick={() => setIsCreatingPlaylist((value) => !value)}
+              >
+                <Plus className="size-4" />
+              </Button>
+            </div>
+
+            {isCreatingPlaylist ? (
+              <form
+                onSubmit={handleCreatePlaylist}
+                className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-card/30 p-4 sm:flex-row"
+              >
+                <Input
+                  value={newPlaylistName}
+                  onChange={(event) => setNewPlaylistName(event.target.value)}
+                  placeholder="My playlist"
+                  maxLength={60}
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <Button type="submit">Create</Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsCreatingPlaylist(false);
+                      setNewPlaylistName("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            ) : null}
+
+            {sortedPlaylists.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {sortedPlaylists.map((playlist) => (
+                  <PlaylistRow
+                    key={playlist.id}
+                    playlist={playlist}
+                    onDelete={() => deletePlaylist(playlist.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={ListMusic}
+                title="No playlists yet"
+                description="Create one to start collecting tracks"
+              />
+            )}
+          </div>
+        </TabsContent>
+
         <TabsContent value="albums" className="mt-4">
           {favoriteAlbums.length > 0 ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] sm:gap-4">
               {favoriteAlbums.map((album) => {
-                const coverUrl = album.cover
-                  ? getCoverUrl(album.cover, "320")
-                  : "";
+                const coverUrl = album.cover ? getCoverUrl(album.cover, "320") : "";
                 return (
                   <Link
                     key={album.id}
@@ -97,9 +206,7 @@ export function LibraryPage() {
                       <div className="aspect-square w-full rounded-md bg-muted" />
                     )}
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">
-                        {album.title}
-                      </p>
+                      <p className="truncate text-sm font-medium">{album.title}</p>
                       <p className="truncate text-xs text-muted-foreground">
                         {album.artist?.name ?? "Unknown Artist"}
                       </p>
@@ -117,7 +224,6 @@ export function LibraryPage() {
           )}
         </TabsContent>
 
-        {/* Favorite artists */}
         <TabsContent value="artists" className="mt-4">
           {favoriteArtists.length > 0 ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] sm:gap-4">
@@ -140,9 +246,7 @@ export function LibraryPage() {
                     ) : (
                       <div className="size-28 rounded-full bg-muted" />
                     )}
-                    <p className="truncate text-sm font-medium">
-                      {artist.name}
-                    </p>
+                    <p className="truncate text-sm font-medium">{artist.name}</p>
                   </Link>
                 );
               })}
@@ -156,7 +260,6 @@ export function LibraryPage() {
           )}
         </TabsContent>
 
-        {/* History */}
         <TabsContent value="history" className="mt-4">
           {history.length > 0 ? (
             <div className="flex flex-col gap-4">
@@ -184,12 +287,88 @@ export function LibraryPage() {
   );
 }
 
+function PlaylistRow({
+  playlist,
+  onDelete,
+}: {
+  playlist: Playlist;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="group flex items-center gap-3 rounded-2xl px-2 py-2 transition-colors hover:bg-accent/30">
+      <Link to={`/playlist/${playlist.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+        <PlaylistArtwork playlist={playlist} className="size-16 shrink-0 rounded-xl" />
+        <div className="min-w-0">
+          <p className="truncate text-base font-medium">{playlist.name}</p>
+          <p className="mt-1 truncate text-sm text-muted-foreground">
+            Playlist • {playlist.numberOfTracks} track
+            {playlist.numberOfTracks === 1 ? "" : "s"}
+          </p>
+        </div>
+      </Link>
+
+      <div className="md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
+        <ActionMenu label={`${playlist.name} actions`}>
+          <ActionMenuItem onSelect={onDelete} destructive>
+            <Trash2 className="size-4" />
+            Delete playlist
+          </ActionMenuItem>
+        </ActionMenu>
+      </div>
+    </div>
+  );
+}
+
+function PlaylistArtwork({
+  playlist,
+  className,
+}: {
+  playlist: Playlist;
+  className?: string;
+}) {
+  const covers = playlist.tracks
+    .map((track) => track.album?.cover)
+    .filter((cover): cover is string => Boolean(cover))
+    .slice(0, 4);
+
+  if (covers.length === 0) {
+    return (
+      <div
+        className={cn(
+          "flex items-center justify-center bg-[linear-gradient(135deg,rgba(236,72,153,0.18),rgba(59,130,246,0.18))] text-primary",
+          className
+        )}
+      >
+        <ListMusic className="size-6" />
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("grid grid-cols-2 overflow-hidden bg-muted", className)}>
+      {Array.from({ length: 4 }, (_, index) => {
+        const cover = covers[index];
+        return cover ? (
+          <img
+            key={`${playlist.id}-${index}`}
+            src={getCoverUrl(cover, "320")}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div key={`${playlist.id}-${index}`} className="bg-muted" />
+        );
+      })}
+    </div>
+  );
+}
+
 function EmptyState({
   icon: Icon,
   title,
   description,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   title: string;
   description: string;
 }) {

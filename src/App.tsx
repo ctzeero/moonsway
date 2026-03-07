@@ -73,7 +73,8 @@ function MobileHeader() {
   const mobileTitle = getMobileTitle(pathname);
   const activeNavItem = NAV_ITEMS.find((item) => isRouteActive(pathname, item.to));
   const showSearch = isRouteActive(pathname, "/search");
-  const showTitle = showSearch || !activeNavItem;
+  const showLibrary = isRouteActive(pathname, "/library");
+  const showTitle = showSearch || showLibrary || !activeNavItem;
 
   return (
     <header className="relative z-30 shrink-0 border-b border-border/50 bg-background/72 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-xl md:hidden">

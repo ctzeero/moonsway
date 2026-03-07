@@ -7,12 +7,13 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Track, Album, ArtistMinified } from "@/types/music";
+import type { Track, Album, ArtistMinified, Playlist, PlaylistTrack } from "@/types/music";
 
 interface LibraryState {
   favoriteTracks: Track[];
   favoriteAlbums: Album[];
   favoriteArtists: ArtistMinified[];
+  playlists: Playlist[];
   history: Track[];
 }
 
@@ -25,11 +26,23 @@ interface LibraryActions {
   isTrackFavorited: (id: string) => boolean;
   isAlbumFavorited: (id: string) => boolean;
   isArtistFavorited: (id: string) => boolean;
+  createPlaylist: (name: string) => string | null;
+  renamePlaylist: (playlistId: string, name: string) => void;
+  deletePlaylist: (playlistId: string) => void;
+  addTrackToPlaylist: (playlistId: string, track: Track) => void;
+  removeTrackFromPlaylist: (playlistId: string, trackId: string) => void;
   addToHistory: (track: Track) => void;
   clearHistory: () => void;
 }
 
 const MAX_HISTORY = 100;
+
+function toPlaylistTrack(track: Track): PlaylistTrack {
+  return {
+    ...track,
+    addedToPlaylistAt: new Date().toISOString(),
+  };
+}
 
 export const useLibraryStore = create<LibraryState & LibraryActions>()(
   persist(
@@ -37,6 +50,7 @@ export const useLibraryStore = create<LibraryState & LibraryActions>()(
       favoriteTracks: [],
       favoriteAlbums: [],
       favoriteArtists: [],
+      playlists: [],
       history: [],
 
       addFavoriteTrack(track) {
@@ -110,6 +124,87 @@ export const useLibraryStore = create<LibraryState & LibraryActions>()(
 
       isArtistFavorited(id) {
         return get().favoriteArtists.some((a) => a.id === id);
+      },
+
+      createPlaylist(name) {
+        const trimmedName = name.trim();
+        if (!trimmedName) return null;
+
+        const now = new Date().toISOString();
+        const playlistId = `local-${crypto.randomUUID()}`;
+        const playlist: Playlist = {
+          id: playlistId,
+          name: trimmedName,
+          tracks: [],
+          isPublic: false,
+          numberOfTracks: 0,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        set((state) => ({
+          playlists: [playlist, ...state.playlists],
+        }));
+
+        return playlistId;
+      },
+
+      renamePlaylist(playlistId, name) {
+        const trimmedName = name.trim();
+        if (!trimmedName) return;
+
+        set((state) => ({
+          playlists: state.playlists.map((playlist) =>
+            playlist.id === playlistId
+              ? {
+                  ...playlist,
+                  name: trimmedName,
+                  updatedAt: new Date().toISOString(),
+                }
+              : playlist
+          ),
+        }));
+      },
+
+      deletePlaylist(playlistId) {
+        set((state) => ({
+          playlists: state.playlists.filter((playlist) => playlist.id !== playlistId),
+        }));
+      },
+
+      addTrackToPlaylist(playlistId, track) {
+        set((state) => ({
+          playlists: state.playlists.map((playlist) => {
+            if (playlist.id !== playlistId) return playlist;
+            if (playlist.tracks.some((item) => item.id === track.id)) return playlist;
+
+            const tracks = [toPlaylistTrack(track), ...playlist.tracks];
+            return {
+              ...playlist,
+              tracks,
+              numberOfTracks: tracks.length,
+              updatedAt: new Date().toISOString(),
+            };
+          }),
+        }));
+      },
+
+      removeTrackFromPlaylist(playlistId, trackId) {
+        set((state) => ({
+          playlists: state.playlists.map((playlist) => {
+            if (playlist.id !== playlistId) return playlist;
+
+            const tracks = playlist.tracks.filter((track) => track.id !== trackId);
+            if (tracks.length === playlist.tracks.length) return playlist;
+
+            return {
+              ...playlist,
+              tracks,
+              numberOfTracks: tracks.length,
+              updatedAt: new Date().toISOString(),
+            };
+          }),
+        }));
       },
 
       addToHistory(track) {

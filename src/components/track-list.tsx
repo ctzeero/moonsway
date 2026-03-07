@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { Heart } from "lucide-react";
 import { usePlayerStore } from "@/stores/player-store";
 import { useLibraryStore } from "@/stores/library-store";
@@ -10,6 +10,8 @@ import type { Track } from "@/types/music";
 interface TrackListProps {
   tracks: Track[];
   onPlay: (track: Track, index: number) => void;
+  renderActions?: (track: Track) => ReactNode;
+  showFavoriteButton?: boolean;
 }
 
 function NowPlayingIndicator() {
@@ -31,7 +33,12 @@ function NowPlayingIndicator() {
   );
 }
 
-export function TrackList({ tracks, onPlay }: TrackListProps) {
+export function TrackList({
+  tracks,
+  onPlay,
+  renderActions,
+  showFavoriteButton = true,
+}: TrackListProps) {
   const currentTrack = usePlayerStore((s) => s.currentTrack);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const favoriteTracks = useLibraryStore((s) => s.favoriteTracks);
@@ -47,7 +54,7 @@ export function TrackList({ tracks, onPlay }: TrackListProps) {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="hidden grid-cols-[1fr_1fr_2rem_4rem] items-center gap-3 border-b border-border px-4 py-2 text-xs font-medium uppercase tracking-wider text-muted-foreground md:grid">
+      <div className="hidden grid-cols-[1fr_1fr_auto_4rem] items-center gap-3 border-b border-border px-4 py-2 text-xs font-medium uppercase tracking-wider text-muted-foreground md:grid">
         <span>Title</span>
         <span>Album</span>
         <span />
@@ -67,7 +74,7 @@ export function TrackList({ tracks, onPlay }: TrackListProps) {
           <div
             key={`${track.id}-${index}`}
             className={cn(
-              "group grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 px-1 py-3 transition-colors hover:bg-accent/22 md:grid-cols-[1fr_1fr_2rem_4rem] md:items-center md:gap-3 md:px-3 md:hover:bg-accent/28",
+              "group grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 px-1 py-3 transition-colors hover:bg-accent/22 md:grid-cols-[1fr_1fr_auto_4rem] md:items-center md:gap-3 md:px-3 md:hover:bg-accent/28",
               isCurrent && "bg-accent/18"
             )}
           >
@@ -121,25 +128,32 @@ export function TrackList({ tracks, onPlay }: TrackListProps) {
             </span>
 
             {/* Favorite */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleFavoriteTrack(track);
-              }}
+            <div
               className={cn(
-                "col-start-2 row-start-1 flex items-center justify-center self-start transition-opacity md:col-start-auto md:row-start-auto md:self-auto md:opacity-0 md:group-hover:opacity-100",
+                "col-start-2 row-start-1 flex items-center gap-1 self-start transition-opacity md:col-start-auto md:row-start-auto md:self-auto md:opacity-0 md:group-hover:opacity-100",
                 isFav && "opacity-100"
               )}
             >
-              <Heart
-                className={cn(
-                  "size-4 transition-colors md:size-3.5",
-                  isFav
-                    ? "fill-primary text-primary"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              />
-            </button>
+              {renderActions ? renderActions(track) : null}
+              {showFavoriteButton ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavoriteTrack(track);
+                  }}
+                  className="flex items-center justify-center"
+                >
+                  <Heart
+                    className={cn(
+                      "size-4 transition-colors md:size-3.5",
+                      isFav
+                        ? "fill-primary text-primary"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  />
+                </button>
+              ) : null}
+            </div>
 
             {/* Duration */}
             <span className="col-start-2 row-start-2 text-right text-xs tabular-nums text-muted-foreground md:col-start-auto md:row-start-auto md:text-sm">
