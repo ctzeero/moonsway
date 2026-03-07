@@ -33,6 +33,7 @@ interface LibraryActions {
   isAlbumFavorited: (id: string) => boolean;
   isArtistFavorited: (id: string) => boolean;
   createPlaylist: (name: string) => string | null;
+  importPlaylist: (name: string, tracks: Track[]) => string | null;
   renamePlaylist: (playlistId: string, name: string) => void;
   deletePlaylist: (playlistId: string) => void;
   addTrackToPlaylist: (playlistId: string, track: Track) => void;
@@ -154,6 +155,31 @@ export const useLibraryStore = create<LibraryState & LibraryActions>()(
           tracks: [],
           isPublic: false,
           numberOfTracks: 0,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        set((state) => ({
+          lastOpenedPlaylistId: playlistId,
+          playlists: [playlist, ...state.playlists],
+        }));
+
+        return playlistId;
+      },
+
+      importPlaylist(name, tracks) {
+        const trimmedName = name.trim();
+        if (!trimmedName) return null;
+
+        const now = new Date().toISOString();
+        const playlistId = `local-${crypto.randomUUID()}`;
+        const playlistTracks = tracks.map((track) => toPlaylistTrack(track));
+        const playlist: Playlist = {
+          id: playlistId,
+          name: trimmedName,
+          tracks: playlistTracks,
+          isPublic: false,
+          numberOfTracks: playlistTracks.length,
           createdAt: now,
           updatedAt: now,
         };

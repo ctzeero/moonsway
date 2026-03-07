@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router";
 import {
   Music2,
   Sparkles,
@@ -23,6 +24,7 @@ import {
   CheckCheck,
   X,
   Loader2,
+  ListMusic,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSpotifyStore, type UnmatchedTrack } from "@/stores/spotify-store";
@@ -409,12 +411,24 @@ function UnmatchedRow({ track }: { track: UnmatchedTrack }) {
 // -- Results / Done step --
 
 function DoneStep() {
+  const navigate = useNavigate();
   const { results, reset } = useSpotifyStore();
   const totalMatched = results.reduce((n, r) => n + r.matched.length, 0);
   const totalUnmatched = results.reduce((n, r) => n + r.unmatched.length, 0);
-  const [expandedId, setExpandedId] = useState<string | null>(
-    () => results.find((result) => result.matched.length > 0)?.spotifyId ?? null
+  const importedPlaylistIds = results.flatMap((result) =>
+    result.localPlaylistId ? [result.localPlaylistId] : []
   );
+  const importedPlaylistCount = importedPlaylistIds.length;
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const handleOpenImportedPlaylists = () => {
+    if (importedPlaylistCount === 1) {
+      navigate(`/playlist/${importedPlaylistIds[0]}`);
+      return;
+    }
+
+    navigate("/library");
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -426,18 +440,28 @@ function DoneStep() {
           </div>
           <h2 className="text-lg font-semibold">Imported to your library</h2>
           <p className="text-sm text-muted-foreground">
-            {totalMatched} tracks saved to Library
+            {importedPlaylistCount} playlist{importedPlaylistCount === 1 ? "" : "s"} added to
+            {" "}Playlists
+            {totalMatched > 0 ? ` · ${totalMatched} matched tracks imported` : ""}
             {totalUnmatched > 0 ? ` · ${totalUnmatched} unmatched need review` : ""}
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:items-end">
-          <p className="text-sm text-muted-foreground">
-            Expand a playlist below to see what was saved.
-          </p>
-          <Button variant="outline" size="sm" onClick={() => reset()}>
-            <RefreshCw className="size-4" />
-            Import more
-          </Button>
+          <div className="flex flex-wrap gap-2 sm:justify-end">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleOpenImportedPlaylists}
+              disabled={importedPlaylistCount === 0}
+            >
+              <ListMusic className="size-4" />
+              {importedPlaylistCount === 1 ? "Open playlist" : "Open playlists"}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => reset()}>
+              <RefreshCw className="size-4" />
+              Import more
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -474,7 +498,7 @@ function DoneStep() {
                   <p className="truncate font-medium">{result.name}</p>
                   <p className="text-xs text-muted-foreground">
                     <span className="text-green-500">
-                      {result.matched.length} saved
+                      {result.matched.length} imported
                     </span>
                     {result.unmatched.length > 0 && (
                       <span className="ml-2 text-destructive">
@@ -485,7 +509,7 @@ function DoneStep() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="rounded-full border border-[#1DB954]/20 bg-[#1DB954]/10 px-2.5 py-1 text-xs font-medium text-[#6ee7a8]">
-                    {hasSavedTracks ? "Saved to library" : "No matches saved"}
+                    {hasSavedTracks ? "Added to playlist" : "Playlist imported empty"}
                   </span>
                   {isExpanded ? (
                     <ChevronUp className="size-4 text-muted-foreground" />
@@ -500,7 +524,7 @@ function DoneStep() {
                   {result.matched.length > 0 && (
                     <div>
                       <p className="mb-3 text-sm font-medium text-muted-foreground">
-                        Saved to library
+                        Added to playlist
                       </p>
                       <div className="space-y-2">
                         {result.matched.map((track) => (

@@ -31,6 +31,7 @@ export interface ImportedPlaylist {
   spotifyId: string;
   name: string;
   coverUrl: string;
+  localPlaylistId: string | null;
   matched: Track[];
   unmatched: UnmatchedTrack[];
 }
@@ -153,6 +154,7 @@ export const useSpotifyStore = create<SpotifyState>((set, get) => ({
     set({ step: "importing", results: [], error: null });
 
     const results: ImportedPlaylist[] = [];
+    let lastImportedPlaylistId: string | null = null;
 
     for (let pi = 0; pi < selected.length; pi++) {
       const playlist = selected[pi];
@@ -252,10 +254,18 @@ export const useSpotifyStore = create<SpotifyState>((set, get) => ({
           }
         }
 
+        const localPlaylistId = useLibraryStore
+          .getState()
+          .importPlaylist(playlist.name, matched);
+        if (localPlaylistId) {
+          lastImportedPlaylistId = localPlaylistId;
+        }
+
         results.push({
           spotifyId: playlist.id,
           name: playlist.name,
           coverUrl: playlist.images[0]?.url ?? "",
+          localPlaylistId,
           matched,
           unmatched,
         });
@@ -271,6 +281,7 @@ export const useSpotifyStore = create<SpotifyState>((set, get) => ({
           spotifyId: playlist.id,
           name: playlist.name,
           coverUrl: playlist.images[0]?.url ?? "",
+          localPlaylistId: null,
           matched: [],
           unmatched: [],
         });
@@ -278,9 +289,11 @@ export const useSpotifyStore = create<SpotifyState>((set, get) => ({
     }
 
     importController = null;
-    useLibraryStore
-      .getState()
-      .addFavoriteTracks(results.flatMap((result) => result.matched));
+    if (lastImportedPlaylistId) {
+      const library = useLibraryStore.getState();
+      library.setActiveTab("playlists");
+      library.setLastOpenedPlaylistId(lastImportedPlaylistId);
+    }
     set({ step: "done", results, progress: null });
   },
 
