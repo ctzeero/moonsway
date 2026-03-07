@@ -160,7 +160,6 @@ export const useLibraryStore = create<LibraryState & LibraryActions>()(
         };
 
         set((state) => ({
-          lastOpenedPlaylistId: playlistId,
           playlists: [playlist, ...state.playlists],
         }));
 
@@ -185,7 +184,6 @@ export const useLibraryStore = create<LibraryState & LibraryActions>()(
         };
 
         set((state) => ({
-          lastOpenedPlaylistId: playlistId,
           playlists: [playlist, ...state.playlists],
         }));
 

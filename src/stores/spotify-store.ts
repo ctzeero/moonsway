@@ -154,8 +154,6 @@ export const useSpotifyStore = create<SpotifyState>((set, get) => ({
     set({ step: "importing", results: [], error: null });
 
     const results: ImportedPlaylist[] = [];
-    let lastImportedPlaylistId: string | null = null;
-
     for (let pi = 0; pi < selected.length; pi++) {
       const playlist = selected[pi];
 
@@ -257,9 +255,6 @@ export const useSpotifyStore = create<SpotifyState>((set, get) => ({
         const localPlaylistId = useLibraryStore
           .getState()
           .importPlaylist(playlist.name, matched);
-        if (localPlaylistId) {
-          lastImportedPlaylistId = localPlaylistId;
-        }
 
         results.push({
           spotifyId: playlist.id,
@@ -289,11 +284,7 @@ export const useSpotifyStore = create<SpotifyState>((set, get) => ({
     }
 
     importController = null;
-    if (lastImportedPlaylistId) {
-      const library = useLibraryStore.getState();
-      library.setActiveTab("playlists");
-      library.setLastOpenedPlaylistId(lastImportedPlaylistId);
-    }
+    useLibraryStore.getState().setActiveTab("playlists");
     set({ step: "done", results, progress: null });
   },
 
