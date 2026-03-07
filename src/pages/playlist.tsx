@@ -59,6 +59,8 @@ export function PlaylistPage() {
   const addTrackToPlaylist = useLibraryStore((s) => s.addTrackToPlaylist);
   const removeTrackFromPlaylist = useLibraryStore((s) => s.removeTrackFromPlaylist);
   const renamePlaylist = useLibraryStore((s) => s.renamePlaylist);
+  const setLibraryActiveTab = useLibraryStore((s) => s.setActiveTab);
+  const setLastOpenedPlaylistId = useLibraryStore((s) => s.setLastOpenedPlaylistId);
 
   const playTrack = usePlayerStore((s) => s.playTrack);
   const playQueue = usePlayerStore((s) => s.playQueue);
@@ -82,6 +84,8 @@ export function PlaylistPage() {
     if (!id) return;
 
     if (isLocalPlaylist) {
+      setLibraryActiveTab("playlists");
+      setLastOpenedPlaylistId(id);
       setRemotePlaylist(null);
       setError(null);
       setIsLoading(false);
@@ -110,7 +114,7 @@ export function PlaylistPage() {
     return () => {
       cancelled = true;
     };
-  }, [id, isLocalPlaylist]);
+  }, [id, isLocalPlaylist, setLastOpenedPlaylistId, setLibraryActiveTab]);
 
   const playlist = useMemo<PlaylistViewModel | null>(() => {
     if (isLocalPlaylist) {
@@ -269,6 +273,17 @@ export function PlaylistPage() {
     setIsEditingTitle(false);
   }, [playlist]);
 
+  const handleBack = useCallback(() => {
+    if (isLocalPlaylist) {
+      setLibraryActiveTab("playlists");
+      setLastOpenedPlaylistId(null);
+      navigate("/library");
+      return;
+    }
+
+    navigate(-1);
+  }, [isLocalPlaylist, navigate, setLastOpenedPlaylistId, setLibraryActiveTab]);
+
   if (isLoading) return <PlaylistSkeleton />;
 
   if (error || !playlist) {
@@ -279,7 +294,7 @@ export function PlaylistPage() {
       <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
         <p className="text-sm text-muted-foreground">{message}</p>
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           className="text-sm text-primary hover:underline"
         >
           Go back
@@ -297,7 +312,7 @@ export function PlaylistPage() {
         <div className="relative overflow-hidden border-b border-border/50 bg-[linear-gradient(180deg,rgba(236,72,153,0.18),rgba(15,23,42,0.02)_65%)]">
           <div className="relative flex flex-col items-center gap-4 p-4 pb-5 sm:flex-row sm:items-start sm:gap-6 sm:p-6 sm:pb-6">
             <button
-              onClick={() => navigate(-1)}
+              onClick={handleBack}
               className="z-10 flex items-center gap-2 self-start rounded-full border border-border/60 bg-card/80 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:absolute sm:mt-1 sm:border-0 sm:bg-transparent sm:px-1 sm:py-1"
             >
               <ArrowLeft className="size-5" />

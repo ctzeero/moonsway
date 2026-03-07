@@ -27,10 +27,9 @@ import { getArtistPictureUrl, getCoverUrl } from "@/lib/api/music-api";
 import { cn } from "@/lib/utils";
 import type { Playlist, Track } from "@/types/music";
 
-type LibraryTab = "tracks" | "albums" | "artists" | "playlists" | "history";
-
 export function LibraryPage() {
   const navigate = useNavigate();
+  const activeTab = useLibraryStore((s) => s.activeTab);
   const favoriteTracks = useLibraryStore((s) => s.favoriteTracks);
   const favoriteAlbums = useLibraryStore((s) => s.favoriteAlbums);
   const favoriteArtists = useLibraryStore((s) => s.favoriteArtists);
@@ -39,10 +38,10 @@ export function LibraryPage() {
   const clearHistory = useLibraryStore((s) => s.clearHistory);
   const createPlaylist = useLibraryStore((s) => s.createPlaylist);
   const deletePlaylist = useLibraryStore((s) => s.deletePlaylist);
+  const setActiveTab = useLibraryStore((s) => s.setActiveTab);
 
   const playTrack = usePlayerStore((s) => s.playTrack);
 
-  const [activeTab, setActiveTab] = useState<LibraryTab>("tracks");
   const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
 
@@ -86,7 +85,7 @@ export function LibraryPage() {
     <div className="flex flex-1 flex-col gap-5 p-4 sm:gap-6 sm:p-6">
       <Tabs
         value={activeTab}
-        onValueChange={(value) => setActiveTab(value as LibraryTab)}
+        onValueChange={(value) => setActiveTab(value as typeof activeTab)}
         className="flex-1"
       >
         <TabsList className="w-full justify-start sm:w-fit">

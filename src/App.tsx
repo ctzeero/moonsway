@@ -11,6 +11,7 @@ import { ArtistPage } from "@/pages/artist";
 import { PlaylistPage } from "@/pages/playlist";
 import { LibraryPage } from "@/pages/library";
 import { SpotifyPage } from "@/pages/spotify";
+import { useLibraryStore } from "@/stores/library-store";
 import logoSrc from "@/assets/icons/moonsway.png";
 import { cn } from "@/lib/utils";
 
@@ -21,21 +22,46 @@ const NAV_ITEMS = [
   { to: "/spotify", icon: Music2, label: "Import", mobileTitle: "Spotify Import" },
 ] as const;
 
+function isLocalPlaylistRoute(pathname: string) {
+  return pathname.startsWith("/playlist/local-");
+}
+
+function getLibraryNavTarget({
+  pathname,
+  activeTab,
+  lastOpenedPlaylistId,
+}: {
+  pathname: string;
+  activeTab: string;
+  lastOpenedPlaylistId: string | null;
+}) {
+  if (isLocalPlaylistRoute(pathname)) {
+    return pathname;
+  }
+
+  if (activeTab === "playlists" && lastOpenedPlaylistId) {
+    return `/playlist/${lastOpenedPlaylistId}`;
+  }
+
+  return "/library";
+}
+
 function isRouteActive(pathname: string, to: string) {
+  if (to === "/library" && isLocalPlaylistRoute(pathname)) return true;
   if (to === "/") return pathname === "/";
   return pathname === to || pathname.startsWith(`${to}/`);
 }
 
 function getMobileTitle(pathname: string) {
+  if (pathname.startsWith("/album/")) return "Album";
+  if (pathname.startsWith("/artist/")) return "Artist";
+  if (pathname.startsWith("/playlist/")) return "Playlist";
+
   const navMatch = NAV_ITEMS.find((item) => isRouteActive(pathname, item.to));
 
   if (navMatch) {
     return navMatch.mobileTitle;
   }
-
-  if (pathname.startsWith("/album/")) return "Album";
-  if (pathname.startsWith("/artist/")) return "Artist";
-  if (pathname.startsWith("/playlist/")) return "Playlist";
 
   return "Moonsway";
 }
@@ -44,15 +70,19 @@ function NavItem({
   to,
   icon: Icon,
   label,
+  libraryTarget,
 }: {
   to: string;
   icon: ComponentType<{ className?: string }>;
   label: string;
+  libraryTarget: string;
 }) {
+  const target = to === "/library" ? libraryTarget : to;
+
   return (
     <NavLink
-      to={to}
-      end={to === "/"}
+      to={target}
+      end={target === "/"}
       className={({ isActive }) =>
         cn(
           "relative flex items-center gap-2 overflow-hidden rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
@@ -103,14 +133,23 @@ function MobileHeader() {
 }
 
 function MobileNav() {
+  const { pathname } = useLocation();
+  const activeTab = useLibraryStore((s) => s.activeTab);
+  const lastOpenedPlaylistId = useLibraryStore((s) => s.lastOpenedPlaylistId);
+  const libraryTarget = getLibraryNavTarget({
+    pathname,
+    activeTab,
+    lastOpenedPlaylistId,
+  });
+
   return (
     <nav className="shrink-0 bg-background/72 px-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 backdrop-blur-xl md:hidden">
       <div className="grid grid-cols-4 gap-2">
         {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
-            to={to}
-            end={to === "/"}
+            to={to === "/library" ? libraryTarget : to}
+            end={(to === "/library" ? libraryTarget : to) === "/"}
             className={({ isActive }) =>
               cn(
                 "flex min-w-0 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition-all",
@@ -131,6 +170,13 @@ function MobileNav() {
 
 function AppLayout() {
   const { pathname } = useLocation();
+  const activeTab = useLibraryStore((s) => s.activeTab);
+  const lastOpenedPlaylistId = useLibraryStore((s) => s.lastOpenedPlaylistId);
+  const libraryTarget = getLibraryNavTarget({
+    pathname,
+    activeTab,
+    lastOpenedPlaylistId,
+  });
   const showDesktopSearch = isRouteActive(pathname, "/search");
 
   return (
@@ -142,7 +188,13 @@ function AppLayout() {
           </div>
           <nav className="flex flex-col gap-1">
             {NAV_ITEMS.map(({ to, icon, label }) => (
-              <NavItem key={to} to={to} icon={icon} label={label} />
+              <NavItem
+                key={to}
+                to={to}
+                icon={icon}
+                label={label}
+                libraryTarget={libraryTarget}
+              />
             ))}
           </nav>
           <div className="mt-auto">

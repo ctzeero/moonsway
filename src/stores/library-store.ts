@@ -9,7 +9,11 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Track, Album, ArtistMinified, Playlist, PlaylistTrack } from "@/types/music";
 
+export type LibraryTab = "tracks" | "albums" | "artists" | "playlists" | "history";
+
 interface LibraryState {
+  activeTab: LibraryTab;
+  lastOpenedPlaylistId: string | null;
   favoriteTracks: Track[];
   favoriteAlbums: Album[];
   favoriteArtists: ArtistMinified[];
@@ -18,6 +22,8 @@ interface LibraryState {
 }
 
 interface LibraryActions {
+  setActiveTab: (tab: LibraryTab) => void;
+  setLastOpenedPlaylistId: (playlistId: string | null) => void;
   addFavoriteTrack: (track: Track) => void;
   addFavoriteTracks: (tracks: Track[]) => void;
   toggleFavoriteTrack: (track: Track) => void;
@@ -47,11 +53,21 @@ function toPlaylistTrack(track: Track): PlaylistTrack {
 export const useLibraryStore = create<LibraryState & LibraryActions>()(
   persist(
     (set, get) => ({
+      activeTab: "tracks",
+      lastOpenedPlaylistId: null,
       favoriteTracks: [],
       favoriteAlbums: [],
       favoriteArtists: [],
       playlists: [],
       history: [],
+
+      setActiveTab(tab) {
+        set({ activeTab: tab });
+      },
+
+      setLastOpenedPlaylistId(playlistId) {
+        set({ lastOpenedPlaylistId: playlistId });
+      },
 
       addFavoriteTrack(track) {
         const state = get();
@@ -143,6 +159,7 @@ export const useLibraryStore = create<LibraryState & LibraryActions>()(
         };
 
         set((state) => ({
+          lastOpenedPlaylistId: playlistId,
           playlists: [playlist, ...state.playlists],
         }));
 
@@ -168,6 +185,10 @@ export const useLibraryStore = create<LibraryState & LibraryActions>()(
 
       deletePlaylist(playlistId) {
         set((state) => ({
+          lastOpenedPlaylistId:
+            state.lastOpenedPlaylistId === playlistId
+              ? null
+              : state.lastOpenedPlaylistId,
           playlists: state.playlists.filter((playlist) => playlist.id !== playlistId),
         }));
       },
