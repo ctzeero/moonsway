@@ -308,7 +308,7 @@ function PlaylistRow({
 
       <div className="md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
         <ActionMenu label={`${playlist.name} actions`}>
-          <ActionMenuItem onSelect={onDelete} destructive>
+          <ActionMenuItem onSelect={onDelete}>
             <Trash2 className="size-4" />
             Delete playlist
           </ActionMenuItem>

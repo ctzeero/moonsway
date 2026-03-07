@@ -229,24 +229,15 @@ export function PlaylistPage() {
     [availableTracks, playTrack]
   );
 
-  const renderRemoveTrackAction = useCallback(
+  const renderRemoveTrackMenuItem = useCallback(
     (track: Track) => {
       if (!playlist?.isLocal) return null;
 
       return (
-        <ActionMenu
-          label={`${track.title} actions`}
-          buttonClassName="p-1.5"
-          menuClassName="right-0 min-w-52"
-        >
-          <ActionMenuItem
-            onSelect={() => removeTrackFromPlaylist(playlist.id, track.id)}
-            destructive
-          >
-            <Trash2 className="size-4" />
-            Remove from playlist
-          </ActionMenuItem>
-        </ActionMenu>
+        <ActionMenuItem onSelect={() => removeTrackFromPlaylist(playlist.id, track.id)}>
+          <Trash2 className="size-4" />
+          Remove from playlist
+        </ActionMenuItem>
       );
     },
     [playlist, removeTrackFromPlaylist]
@@ -421,7 +412,9 @@ export function PlaylistPage() {
             <TrackList
               tracks={sortedTracks}
               onPlay={handlePlayTrack}
-              renderActions={playlist.isLocal ? renderRemoveTrackAction : undefined}
+              renderMenuItems={
+                playlist.isLocal ? renderRemoveTrackMenuItem : undefined
+              }
               showFavoriteButton={!playlist.isLocal}
             />
           ) : (

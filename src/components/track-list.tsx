@@ -1,5 +1,6 @@
 import { type ReactNode, useMemo, useState } from "react";
 import { Heart } from "lucide-react";
+import { TrackActionMenu } from "@/components/track-action-menu";
 import { usePlayerStore } from "@/stores/player-store";
 import { useLibraryStore } from "@/stores/library-store";
 import { getCoverUrl } from "@/lib/api/music-api";
@@ -11,6 +12,7 @@ interface TrackListProps {
   tracks: Track[];
   onPlay: (track: Track, index: number) => void;
   renderActions?: (track: Track) => ReactNode;
+  renderMenuItems?: (track: Track) => ReactNode;
   showFavoriteButton?: boolean;
 }
 
@@ -37,6 +39,7 @@ export function TrackList({
   tracks,
   onPlay,
   renderActions,
+  renderMenuItems,
   showFavoriteButton = true,
 }: TrackListProps) {
   const currentTrack = usePlayerStore((s) => s.currentTrack);
@@ -131,9 +134,12 @@ export function TrackList({
             <div
               className={cn(
                 "col-start-2 row-start-1 flex items-center gap-1 self-start transition-opacity md:col-start-auto md:row-start-auto md:self-auto md:opacity-0 md:group-hover:opacity-100",
-                isFav && "opacity-100"
+                (isFav || renderActions || renderMenuItems) && "opacity-100"
               )}
             >
+              <TrackActionMenu track={track}>
+                {renderMenuItems ? renderMenuItems(track) : null}
+              </TrackActionMenu>
               {renderActions ? renderActions(track) : null}
               {showFavoriteButton ? (
                 <button
