@@ -13,36 +13,6 @@ const DEFAULT_CONFIG = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID ?? "",
 };
 
-function shouldUseCurrentHostAuthDomain(hostname: string): boolean {
-  return !(
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "0.0.0.0" ||
-    hostname.endsWith(".localhost")
-  );
-}
-
-function resolveConfig(baseConfig: typeof DEFAULT_CONFIG): typeof DEFAULT_CONFIG {
-  if (typeof window === "undefined") return baseConfig;
-
-  const hostname = window.location.hostname;
-  if (!hostname || !shouldUseCurrentHostAuthDomain(hostname)) {
-    return baseConfig;
-  }
-
-  if (
-    baseConfig.authDomain.endsWith(".firebaseapp.com") ||
-    baseConfig.authDomain.endsWith(".web.app")
-  ) {
-    return {
-      ...baseConfig,
-      authDomain: hostname,
-    };
-  }
-
-  return baseConfig;
-}
-
 function getStoredConfig() {
   try {
     return JSON.parse(
@@ -61,7 +31,7 @@ let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let googleProvider: GoogleAuthProvider | null = null;
 
-const config = resolveConfig(getStoredConfig() ?? DEFAULT_CONFIG);
+const config = getStoredConfig() ?? DEFAULT_CONFIG;
 
 if (isValidConfig(config)) {
   try {
