@@ -120,6 +120,7 @@ export function AlbumPage() {
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
             <Link
               to={`/artist/${album.artist.id}`}
+              state={{ artist: album.artist }}
               className="font-medium text-foreground hover:underline"
             >
               {album.artist.name}

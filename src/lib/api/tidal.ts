@@ -153,14 +153,87 @@ function prepareAlbum(raw: any): Album {
   };
 }
 
-function normalizeArtist(raw: any): ArtistMinified {
+function normalizeArtist(raw: any, fallbackId?: string): ArtistMinified {
   if (!raw) {
-    return { id: "0", name: "Unknown Artist" };
+    return { id: fallbackId ?? "0", name: "Unknown Artist" };
   }
+
+  const name =
+    typeof raw.name === "string" && raw.name.trim().length > 0
+      ? raw.name.trim()
+      : "Unknown Artist";
+  const picture =
+    typeof raw.picture === "string" && raw.picture.trim().length > 0
+      ? raw.picture
+      : undefined;
+
   return {
-    id: String(raw.id),
-    name: raw.name ?? "Unknown Artist",
-    picture: raw.picture ?? undefined,
+    id: String(raw.id ?? fallbackId ?? "0"),
+    name,
+    picture,
+  };
+}
+
+function collectArtistCandidates(
+  value: any,
+  candidates: ArtistMinified[],
+  visited = new Set<any>()
+): void {
+  if (!value || typeof value !== "object" || visited.has(value)) return;
+  visited.add(value);
+
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectArtistCandidates(item, candidates, visited));
+    return;
+  }
+
+  if (typeof value.name === "string" || typeof value.picture === "string") {
+    candidates.push(normalizeArtist(value));
+  }
+
+  Object.values(value).forEach((nested) =>
+    collectArtistCandidates(nested, candidates, visited)
+  );
+}
+
+function scoreArtistCandidate(
+  artist: ArtistMinified,
+  expectedArtistId?: string
+): number {
+  let score = 0;
+
+  if (expectedArtistId && artist.id === expectedArtistId) score += 4;
+  if (artist.name !== "Unknown Artist") score += 2;
+  if (artist.picture) score += 1;
+
+  return score;
+}
+
+function pickBestArtistCandidate(
+  candidates: ArtistMinified[],
+  artistId: string
+): ArtistMinified {
+  const fallback = normalizeArtist(null, artistId);
+  let best = fallback;
+  let bestScore = scoreArtistCandidate(fallback, artistId);
+
+  for (const candidate of candidates) {
+    const score = scoreArtistCandidate(candidate, artistId);
+
+    if (score > bestScore) {
+      best = candidate;
+      bestScore = score;
+      continue;
+    }
+
+    if (score === bestScore && !best.picture && candidate.picture) {
+      best = candidate;
+    }
+  }
+
+  return {
+    ...best,
+    id: best.id === "0" ? artistId : best.id,
   };
 }
 
@@ -297,7 +370,7 @@ export async function searchArtists(
   const normalized = normalizeSearchResponse<ArtistMinified>(data, "artists");
   const result = {
     ...normalized,
-    items: normalized.items.map(normalizeArtist),
+    items: normalized.items.map((artist) => normalizeArtist(artist)),
   };
   logApiResponse("searchArtists normalized response", result);
   return result;
@@ -367,21 +440,24 @@ export async function getArtist(
   signal?: AbortSignal
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
-  const response = await fetchWithRetry(`/artist/?id=${artistId}`, { signal });
-  const jsonData = await response.json();
+  const [profileResponse, contentResponse] = await Promise.all([
+    fetchWithRetry(`/artist/?id=${artistId}`, { signal }),
+    fetchWithRetry(`/artist/?f=${artistId}&skip_tracks=true`, { signal }),
+  ]);
+  const [jsonData, contentJsonData] = await Promise.all([
+    profileResponse.json(),
+    contentResponse.json(),
+  ]);
   logApiResponse("getArtist profile raw response", jsonData);
-  const data = jsonData.data || jsonData;
-
-  const artist = normalizeArtist(data);
-
-  // Fetch artist content (albums, tracks)
-  const contentResponse = await fetchWithRetry(
-    `/artist/?f=${artistId}&skip_tracks=true`,
-    { signal }
-  );
-  const contentJsonData = await contentResponse.json();
   logApiResponse("getArtist content raw response", contentJsonData);
+
+  const data = jsonData.data || jsonData;
   const contentData = contentJsonData.data || contentJsonData;
+  const artistCandidates: ArtistMinified[] = [
+    normalizeArtist(data, artistId),
+  ];
+  collectArtistCandidates(data, artistCandidates);
+  collectArtistCandidates(contentData, artistCandidates);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const albumMap = new Map<string, Album>();
@@ -413,6 +489,7 @@ export async function getArtist(
   const entries = Array.isArray(contentData) ? contentData : [contentData];
   entries.forEach((entry) => scan(entry));
 
+  const artist = pickBestArtistCandidate(artistCandidates, artistId);
   const albums = Array.from(albumMap.values());
   const tracks = Array.from(trackMap.values()).slice(0, 15);
 
@@ -460,9 +537,9 @@ export async function getTrackMetadata(
   const data = json.data || json;
 
   const items = Array.isArray(data) ? data : [data];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const found = items.find(
-    (i: any) => String(i.id) === id || String(i.item?.id) === id
+    (item: { id?: string | number; item?: { id?: string | number } }) =>
+      String(item.id) === id || String(item.item?.id) === id
   );
 
   if (found) {

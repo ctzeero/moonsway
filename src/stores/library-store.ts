@@ -29,6 +29,7 @@ interface LibraryActions {
   toggleFavoriteTrack: (track: Track) => void;
   toggleFavoriteAlbum: (album: Album) => void;
   toggleFavoriteArtist: (artist: ArtistMinified) => void;
+  upsertFavoriteArtist: (artist: ArtistMinified) => void;
   isTrackFavorited: (id: string) => boolean;
   isAlbumFavorited: (id: string) => boolean;
   isArtistFavorited: (id: string) => boolean;
@@ -43,6 +44,54 @@ interface LibraryActions {
 }
 
 const MAX_HISTORY = 100;
+
+function normalizeFavoriteArtist(
+  artist: ArtistMinified | null | undefined
+): ArtistMinified | null {
+  if (!artist?.id) return null;
+
+  const name =
+    typeof artist.name === "string" && artist.name.trim().length > 0
+      ? artist.name.trim()
+      : "Unknown Artist";
+  const picture =
+    typeof artist.picture === "string" && artist.picture.trim().length > 0
+      ? artist.picture
+      : undefined;
+
+  return {
+    id: String(artist.id),
+    name,
+    picture,
+  };
+}
+
+function normalizeFavoriteArtists(artists: ArtistMinified[] | undefined): ArtistMinified[] {
+  const normalized = new Map<string, ArtistMinified>();
+
+  for (const artist of artists ?? []) {
+    const next = normalizeFavoriteArtist(artist);
+    if (!next) continue;
+
+    normalized.set(next.id, mergeFavoriteArtist(normalized.get(next.id), next));
+  }
+
+  return Array.from(normalized.values());
+}
+
+function mergeFavoriteArtist(
+  current: ArtistMinified | undefined,
+  incoming: ArtistMinified
+): ArtistMinified {
+  return {
+    id: incoming.id,
+    name:
+      current?.name && current.name !== "Unknown Artist" && incoming.name === "Unknown Artist"
+        ? current.name
+        : incoming.name,
+    picture: incoming.picture ?? current?.picture,
+  };
+}
 
 function toPlaylistTrack(track: Track): PlaylistTrack {
   return {
@@ -118,17 +167,50 @@ export const useLibraryStore = create<LibraryState & LibraryActions>()(
       },
 
       toggleFavoriteArtist(artist) {
+        const normalizedArtist = normalizeFavoriteArtist(artist);
+        if (!normalizedArtist) return;
+
         const state = get();
-        const exists = state.favoriteArtists.some((a) => a.id === artist.id);
+        const exists = state.favoriteArtists.some(
+          (a) => a.id === normalizedArtist.id
+        );
         if (exists) {
           set({
             favoriteArtists: state.favoriteArtists.filter(
-              (a) => a.id !== artist.id
+              (a) => a.id !== normalizedArtist.id
             ),
           });
         } else {
-          set({ favoriteArtists: [artist, ...state.favoriteArtists] });
+          set({
+            favoriteArtists: [normalizedArtist, ...state.favoriteArtists],
+          });
         }
+      },
+
+      upsertFavoriteArtist(artist) {
+        const normalizedArtist = normalizeFavoriteArtist(artist);
+        if (!normalizedArtist) return;
+
+        set((state) => {
+          const existingIndex = state.favoriteArtists.findIndex(
+            (item) => item.id === normalizedArtist.id
+          );
+
+          if (existingIndex === -1) {
+            return {
+              favoriteArtists: [normalizedArtist, ...state.favoriteArtists],
+            };
+          }
+
+          const mergedArtist = mergeFavoriteArtist(
+            state.favoriteArtists[existingIndex],
+            normalizedArtist
+          );
+          const favoriteArtists = [...state.favoriteArtists];
+          favoriteArtists[existingIndex] = mergedArtist;
+
+          return { favoriteArtists };
+        });
       },
 
       isTrackFavorited(id) {
@@ -265,6 +347,19 @@ export const useLibraryStore = create<LibraryState & LibraryActions>()(
     }),
     {
       name: "moonsway-library",
+      version: 2,
+      migrate: (persistedState) => {
+        if (!persistedState || typeof persistedState !== "object") {
+          return persistedState as LibraryState;
+        }
+
+        const state = persistedState as Partial<LibraryState>;
+
+        return {
+          ...state,
+          favoriteArtists: normalizeFavoriteArtists(state.favoriteArtists),
+        } as LibraryState;
+      },
     }
   )
 );

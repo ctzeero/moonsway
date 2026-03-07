@@ -224,6 +224,7 @@ function ArtistGrid({ artists }: { artists: ArtistMinified[] }) {
           <Link
             key={artist.id}
             to={`/artist/${artist.id}`}
+            state={{ artist }}
             className="group flex flex-col items-center gap-2 rounded-lg p-3 transition-colors hover:bg-accent/50"
           >
             {pictureUrl ? (

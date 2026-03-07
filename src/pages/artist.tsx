@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router";
+import { useParams, useNavigate, Link, useLocation } from "react-router";
 import { ArrowLeft, Heart, Play } from "lucide-react";
 import { getArtist, getCoverUrl, getArtistPictureUrl } from "@/lib/api/music-api";
 import { TrackList } from "@/components/track-list";
@@ -14,17 +14,91 @@ interface ArtistDetail extends ArtistMinified {
   tracks: Track[];
 }
 
+interface ArtistRouteState {
+  artist?: ArtistMinified;
+}
+
+function buildArtistPictureCandidates(
+  primaryPicture?: string,
+  fallbackPicture?: string
+): string[] {
+  const pictureIds = [primaryPicture, fallbackPicture].filter(
+    (value): value is string => Boolean(value)
+  );
+  const urls: string[] = [];
+
+  for (const pictureId of pictureIds) {
+    urls.push(getArtistPictureUrl(pictureId, "640"));
+    urls.push(getArtistPictureUrl(pictureId, "320"));
+  }
+
+  return Array.from(new Set(urls.filter(Boolean)));
+}
+
+function mergeArtistDetail(
+  artist: ArtistDetail,
+  fallbackArtist: ArtistMinified | null
+): ArtistDetail {
+  if (!fallbackArtist || fallbackArtist.id !== artist.id) return artist;
+
+  return {
+    ...artist,
+    name:
+      artist.name && artist.name !== "Unknown Artist"
+        ? artist.name
+        : fallbackArtist.name,
+    picture: artist.picture ?? fallbackArtist.picture,
+  };
+}
+
+function ArtistHeroImage({
+  picture,
+  fallbackPicture,
+}: {
+  picture?: string;
+  fallbackPicture?: string;
+}) {
+  const [candidateIndex, setCandidateIndex] = useState(0);
+  const pictureCandidates = buildArtistPictureCandidates(picture, fallbackPicture);
+  const activePicture = pictureCandidates[candidateIndex];
+
+  if (!activePicture) {
+    return <div className="size-32 shrink-0 rounded-full bg-muted sm:size-40" />;
+  }
+
+  return (
+    <img
+      src={activePicture}
+      alt=""
+      className="size-32 shrink-0 rounded-full object-cover shadow-lg sm:size-40"
+      onError={() => {
+        setCandidateIndex((current) =>
+          current < pictureCandidates.length - 1 ? current + 1 : current
+        );
+      }}
+    />
+  );
+}
+
 export function ArtistPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [artist, setArtist] = useState<ArtistDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const location = useLocation();
 
   const playTrack = usePlayerStore((s) => s.playTrack);
   const playQueue = usePlayerStore((s) => s.playQueue);
   const favoriteArtists = useLibraryStore((s) => s.favoriteArtists);
   const toggleFavoriteArtist = useLibraryStore((s) => s.toggleFavoriteArtist);
+  const upsertFavoriteArtist = useLibraryStore((s) => s.upsertFavoriteArtist);
+  const routeArtist = (location.state as ArtistRouteState | null)?.artist ?? null;
+  const favoriteArtist = favoriteArtists.find((item) => item.id === id) ?? null;
+  const fallbackArtist =
+    routeArtist && routeArtist.id === id ? routeArtist : favoriteArtist;
+  const [artist, setArtist] = useState<ArtistDetail | null>(
+    fallbackArtist ? { ...fallbackArtist, albums: [], tracks: [] } : null
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -32,11 +106,12 @@ export function ArtistPage() {
 
     setIsLoading(true);
     setError(null);
+    setArtist(fallbackArtist ? { ...fallbackArtist, albums: [], tracks: [] } : null);
 
     getArtist(id)
       .then((result: ArtistDetail) => {
         if (cancelled) return;
-        setArtist(result);
+        setArtist(mergeArtistDetail(result, fallbackArtist));
       })
       .catch((err) => {
         if (cancelled) return;
@@ -50,7 +125,19 @@ export function ArtistPage() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [fallbackArtist, id]);
+
+  useEffect(() => {
+    if (!artist || !favoriteArtist) return;
+
+    const hasBetterName =
+      favoriteArtist.name === "Unknown Artist" && artist.name !== "Unknown Artist";
+    const hasBetterPicture = !favoriteArtist.picture && Boolean(artist.picture);
+
+    if (hasBetterName || hasBetterPicture) {
+      upsertFavoriteArtist(artist);
+    }
+  }, [artist, favoriteArtist, upsertFavoriteArtist]);
 
   const handlePlayTrack = useCallback(
     (track: Track) => {
@@ -83,10 +170,8 @@ export function ArtistPage() {
     );
   }
 
-  const pictureUrl = artist.picture
-    ? getArtistPictureUrl(artist.picture, "640")
-    : "";
   const isFav = favoriteArtists.some((item) => item.id === artist.id);
+  const pictureKey = `${artist.picture ?? ""}:${fallbackArtist?.picture ?? ""}`;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -100,15 +185,11 @@ export function ArtistPage() {
           <span className="sm:hidden">Back</span>
         </button>
 
-        {pictureUrl ? (
-          <img
-            src={pictureUrl}
-            alt=""
-            className="size-32 shrink-0 rounded-full object-cover shadow-lg sm:size-40"
-          />
-        ) : (
-          <div className="size-32 shrink-0 rounded-full bg-muted sm:size-40" />
-        )}
+        <ArtistHeroImage
+          key={pictureKey}
+          picture={artist.picture}
+          fallbackPicture={fallbackArtist?.picture}
+        />
 
         <div className="flex min-w-0 flex-col gap-2">
           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -146,8 +227,8 @@ export function ArtistPage() {
 
       {/* Top tracks */}
       {artist.tracks.length > 0 && (
-        <section className="px-0 pb-6 sm:px-2">
-          <h2 className="px-4 pb-3 pt-4 text-lg font-semibold">Popular Tracks</h2>
+        <section className="px-4 pb-6 sm:px-2">
+          <h2 className="pb-3 pt-4 text-lg font-semibold">Popular Tracks</h2>
           <TrackList tracks={artist.tracks} onPlay={handlePlayTrack} />
         </section>
       )}
