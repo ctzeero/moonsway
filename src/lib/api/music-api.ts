@@ -6,6 +6,7 @@
  */
 
 import * as tidal from "./tidal";
+import { getQobuzStreamUrl } from "./qobuz";
 import { cache } from "@/lib/cache";
 import type {
   Track,
@@ -138,17 +139,36 @@ export async function getTrackMetadata(
 // -- Streaming --
 
 export async function getStreamUrl(
-  id: string,
+  track: Pick<Track, "id" | "isrc">,
   quality: StreamQuality = "HI_RES_LOSSLESS",
   signal?: AbortSignal
 ): Promise<string> {
-  const cacheKey = `stream_${id}_${quality}`;
+  const cacheKey = `stream_${track.id}_${quality}`;
 
   if (streamCache.has(cacheKey)) {
     return streamCache.get(cacheKey)!;
   }
 
-  const url = await tidal.getStreamUrl(id, quality, signal);
+  let url: string | null = null;
+
+  if (track.isrc) {
+    try {
+      url = await getQobuzStreamUrl(track.isrc, quality, signal);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.name === "AbortError" &&
+        signal?.aborted
+      ) {
+        throw error;
+      }
+      console.warn("[Stream] Qobuz lookup failed, falling back to TIDAL:", error);
+    }
+  }
+
+  if (!url) {
+    url = await tidal.getStreamUrl(track.id, quality, signal);
+  }
 
   streamCache.set(cacheKey, url);
   pruneStreamCache();

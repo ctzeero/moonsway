@@ -268,7 +268,7 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
       }
 
       try {
-        const url = await getStreamUrl(track.id, get().quality);
+        const url = await getStreamUrl(track, get().quality);
         if (requestId !== activeLoadRequestId) return;
 
         audio.src = url;
@@ -329,7 +329,7 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
           error.message !== "stale-load"
         ) {
           try {
-            const url = await getStreamUrl(track.id, "LOSSLESS");
+            const url = await getStreamUrl(track, "LOSSLESS");
             if (requestId !== activeLoadRequestId) return;
 
             audio.src = url;

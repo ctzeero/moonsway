@@ -4,10 +4,11 @@
  * Same instances used by Monochrome.
  */
 
-export type InstanceType = "api" | "streaming";
+export type InstanceType = "api" | "streaming" | "qobuz";
 
 const DEFAULT_INSTANCES: Record<InstanceType, string[]> = {
   api: [
+    "https://hifi.geeked.wtf",
     "https://eu-central.monochrome.tf",
     "https://us-west.monochrome.tf",
     "https://arran.monochrome.tf",
@@ -20,10 +21,12 @@ const DEFAULT_INSTANCES: Record<InstanceType, string[]> = {
     "https://hifi-two.spotisaver.net",
     "https://maus.qqdl.site",
     "https://vogel.qqdl.site",
+    "https://katze.qqdl.site",
     "https://hund.qqdl.site",
     "https://tidal.kinoplus.online",
   ],
   streaming: [
+    "https://hifi.geeked.wtf",
     "https://arran.monochrome.tf",
     "https://api.monochrome.tf/",
     "https://triton.squid.wtf",
@@ -36,6 +39,11 @@ const DEFAULT_INSTANCES: Record<InstanceType, string[]> = {
     "https://tidal-api.binimum.org",
     "https://hifi-one.spotisaver.net",
     "https://hifi-two.spotisaver.net",
+  ],
+  qobuz: [
+    "https://qdl-api.monochrome.tf",
+    "https://qobuz.kennyy.com.br",
+    "https://mono.scavengerfurs.net",
   ],
 };
 
