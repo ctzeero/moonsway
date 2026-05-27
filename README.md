@@ -132,3 +132,4 @@ bun run tauri build
 
 - This project currently depends on public community TIDAL proxy instances
 
+
